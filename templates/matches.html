@@ -13,12 +13,12 @@
 <nav class="nav">
   <div class="nav-logo">⚽ <span>WM</span> Predictor</div>
   <ul class="nav-links">
-    <li><a href="/matches" class="active">Spiele</a></li>
+    <li><a href="/matches" class="active">Games</a></li>
     <li><a href="/leaderboard">Leaderboard</a></li>
   </ul>
   <div class="nav-user">
-    <span>Eingeloggt als <strong>{{ username }}</strong></span>
-    <button class="btn btn-ghost" id="logout-btn">Abmelden</button>
+    <span>Loged in as <strong>{{ username }}</strong></span>
+    <button class="btn btn-ghost" id="logout-btn">Log out</button>
   </div>
 </nav>
 
@@ -28,16 +28,16 @@
   <div class="matches-header">
     <div>
       <div class="section-label">FIFA World Cup 2026</div>
-      <h1 class="section-title">Spiele & Tipps</h1>
+      <h1 class="section-title">Games & Tipps</h1>
     </div>
   </div>
 
   <!-- Filter -->
   <div class="filter-bar">
-    <button class="filter-btn active" data-filter="open">Offen</button>
+    <button class="filter-btn active" data-filter="open">Open</button>
     <button class="filter-btn" data-filter="live">Live</button>
-    <button class="filter-btn" data-filter="finished">Beendet</button>
-    <button class="filter-btn" data-filter="all">Alle</button>
+    <button class="filter-btn" data-filter="finished">Finished</button>
+    <button class="filter-btn" data-filter="all">All</button>
   </div>
 
   <!-- Match grid -->
@@ -48,7 +48,5 @@
 </main>
 
 <script src="{{ url_for('static', filename='js/matches.js') }}"></script>
-<script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
-<script>twemoji.parse(document.body);</script>
 </body>
 </html>
