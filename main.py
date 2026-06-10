@@ -12,7 +12,13 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
-limiter = Limiter(app, key_func=get_remote_address, default_limits=[])
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute"],
+    storage_uri="memory://"
+)
 
 DB_CONFIG = {
     'host':        os.getenv('DB_HOST'),
@@ -118,6 +124,23 @@ def admin_required(f):
 
 
 # ══════════════════════════════════════════
+# Error Handlers
+# ══════════════════════════════════════════
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify(error='Not found.'), 404
+
+@app.errorhandler(429)
+def rate_limit_exceeded(e):
+    return jsonify(error='Too many requests. Please slow down.'), 429
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    return jsonify(error='Something went wrong.'), 500
+
+
+# ══════════════════════════════════════════
 # Flask Routes – Seiten
 # ══════════════════════════════════════════
 
@@ -141,7 +164,6 @@ def leaderboard():
 # ══════════════════════════════════════════
 
 @app.route('/api/me')
-@limiter.limit('60 per minute')
 def api_me():
     if 'user_id' not in session:
         return jsonify(error='Unauthorized'), 401
@@ -149,7 +171,7 @@ def api_me():
 
 
 @app.route('/api/register', methods=['POST'])
-@limiter.limit('5 per minute')
+@limiter.limit("5 per minute")
 def api_register():
     data     = request.json
     name     = (data.get('name') or '').strip()
@@ -183,7 +205,7 @@ def api_register():
 
 
 @app.route('/api/login', methods=['POST'])
-@limiter.limit('10 per minute')
+@limiter.limit("10 per minute")
 def api_login():
     data     = request.json
     email    = (data.get('email') or '').strip().lower()
@@ -222,7 +244,6 @@ def api_login():
 
 
 @app.route('/api/logout', methods=['POST'])
-@limiter.limit('60 per minute')
 def api_logout():
     session.clear()
     return jsonify(message='Logged out.'), 200
@@ -233,7 +254,6 @@ def get_current_user_id():
 
 
 @app.route('/api/predictions', methods=['POST'])
-@limiter.limit('60 per minute')
 def api_submit_prediction():
     if 'user_id' not in session:
         return jsonify(error='Unauthorized'), 401
@@ -275,7 +295,6 @@ def api_submit_prediction():
 
 
 @app.route('/api/matches', methods=['GET'])
-@limiter.limit('60 per minute')
 def api_get_matches():
     conn = get_db()
     try:
@@ -289,7 +308,6 @@ def api_get_matches():
 
 
 @app.route('/api/matches', methods=['POST'])
-@limiter.limit('60 per minute')
 @admin_required
 def api_add_match():
     data         = request.json
@@ -298,7 +316,7 @@ def api_add_match():
     kickoff_time = (data.get('kickoff_time') or '').strip()
 
     if not home_team or not away_team or not kickoff_time:
-        return jsonify(error='home_team, away_team und kickoff_time sind erforderlich.'), 400
+        return jsonify(error='home_team, away_team and kickoff_time are required.'), 400
 
     conn = get_db()
     try:
@@ -315,7 +333,6 @@ def api_add_match():
 
 
 @app.route('/api/leaderboard', methods=['GET'])
-@limiter.limit('60 per minute')
 def api_leaderboard():
     conn = get_db()
     try:
@@ -335,7 +352,6 @@ def api_leaderboard():
 
 
 @app.route('/api/results', methods=['POST'])
-@limiter.limit('60 per minute')
 @admin_required
 def api_submit_results():
     data = request.json
