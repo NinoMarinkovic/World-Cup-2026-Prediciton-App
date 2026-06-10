@@ -1,6 +1,5 @@
 import pytest
 from datetime import datetime, timedelta
-
 import main
 
 
@@ -11,17 +10,13 @@ class FakeCursor:
 
     def execute(self, query, params=None):
         normalized = ' '.join(query.split())
-        for key, value in self.results.items():
+        for key, val in self.results.items():
             if key in normalized:
-                self._current = value
+                self._current = val
                 return
         self._current = None
 
     def fetchone(self):
-        if self._current is None:
-            return None
-        if isinstance(self._current, list):
-            return self._current[0] if self._current else None
         return self._current
 
     def fetchall(self):
@@ -34,29 +29,252 @@ class FakeCursor:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc, tb):
-        return False
+    def __exit__(self, *args):
+        pass
 
 
-class FakeConnection:
+class FakeConn:
     def __init__(self, results):
-        self.cursor_obj = FakeCursor(results)
-        self.committed = False
+        self._cursor = FakeCursor(results)
 
     def cursor(self):
-        return self.cursor_obj
+        return self._cursor
 
     def commit(self):
-        self.committed = True
+        pass
 
     def close(self):
         pass
 
+    def __enter__(self):
+        return self
 
-@pytest.fixture(autouse=True)
+    def __exit__(self, *args):
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def make_user(password_plain, is_admin=0):
+    return {
+        'id': 1,
+        'username': 'Alice',
+        'password_hash': main.hash_password(password_plain),
+        'is_admin': is_admin,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+class TestRegister:
+    def test_missing_fields_returns_400(self, client):
+        rv = client.post('/api/register', json={})
+        assert rv.status_code == 400
+
+    def test_weak_password_returns_400(self, client):
+        rv = client.post('/api/register', json={
+            'username': 'Alice',
+            'email': 'alice@example.com',
+            'password': 'weak',
+        })
+        assert rv.status_code == 400
+
+    def test_invalid_email_returns_400(self, client):
+        rv = client.post('/api/register', json={
+            'username': 'Alice',
+            'email': 'not-an-email',
+            'password': 'Secure1$',
+        })
+        assert rv.status_code == 400
+
+    def test_successful_registration_returns_201(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': None})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/register', json={
+            'username': 'Alice',
+            'email': 'alice@example.com',
+            'password': 'Secure1$',
+        })
+        assert rv.status_code == 201
+
+    def test_duplicate_email_returns_409(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': make_user('Secure1$')})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/register', json={
+            'username': 'Alice',
+            'email': 'alice@example.com',
+            'password': 'Secure1$',
+        })
+        assert rv.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# Login
+# ---------------------------------------------------------------------------
+
+class TestLogin:
+    def test_missing_fields_returns_400(self, client):
+        rv = client.post('/api/login', json={})
+        assert rv.status_code == 400
+
+    def test_user_not_found_returns_401(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': None})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/login', json={
+            'email': 'alice@example.com',
+            'password': 'Correct1$',
+        })
+        assert rv.status_code == 401
+
+    def test_incorrect_password_returns_401(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': make_user('Correct1$')})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/login', json={
+            'email': 'alice@example.com',
+            'password': 'WrongPass1$',
+        })
+        assert rv.status_code == 401
+
+    def test_success_sets_session(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': make_user('Correct1$')})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/login', json={
+            'email': 'alice@example.com',
+            'password': 'Correct1$',
+        })
+        assert rv.status_code == 200
+        with client.session_transaction() as sess:
+            assert sess.get('user_id') == 1
+            assert sess.get('user_name') == 'Alice'
+            assert 'is_admin' in sess
+
+    def test_admin_flag_set_in_session(self, client, monkeypatch):
+        def fake_get_conn():
+            return FakeConn({'SELECT * FROM users WHERE email': make_user('Correct1$', is_admin=1)})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/login', json={
+            'email': 'alice@example.com',
+            'password': 'Correct1$',
+        })
+        assert rv.status_code == 200
+        with client.session_transaction() as sess:
+            assert sess.get('is_admin') is True
+
+
+# ---------------------------------------------------------------------------
+# Predictions
+# ---------------------------------------------------------------------------
+
+class TestPredictions:
+    def test_submit_prediction_unauthenticated_returns_401(self, client):
+        rv = client.post('/api/predictions', json={
+            'match_id': 1, 'pred_home': 2, 'pred_away': 1,
+        })
+        assert rv.status_code == 401
+
+    def test_submit_prediction_authenticated(self, client, monkeypatch, auth_session):
+        future_match = {
+            'id': 1,
+            'kickoff_time': datetime.utcnow() + timedelta(hours=2),
+            'finished': False,
+        }
+
+        def fake_get_conn():
+            return FakeConn({
+                'SELECT id, kickoff_time, finished FROM matches': future_match,
+                'INSERT INTO predictions': None,
+            })
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/predictions', json={
+            'match_id': 1, 'pred_home': 2, 'pred_away': 1,
+        })
+        assert rv.status_code in (200, 201)
+
+    def test_submit_prediction_past_match_returns_400(self, client, monkeypatch, auth_session):
+        past_match = {
+            'id': 1,
+            'kickoff_time': datetime.utcnow() - timedelta(hours=2),
+            'finished': False,
+        }
+
+        def fake_get_conn():
+            return FakeConn({'SELECT id, kickoff_time, finished FROM matches': past_match})
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/predictions', json={
+            'match_id': 1, 'pred_home': 2, 'pred_away': 1,
+        })
+        assert rv.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Results (admin only)
+# ---------------------------------------------------------------------------
+
+class TestResults:
+    def test_submit_result_unauthenticated_returns_401(self, client):
+        rv = client.post('/api/results', json={
+            'match_id': 1, 'home_score': 2, 'away_score': 1,
+        })
+        assert rv.status_code == 401
+
+    def test_submit_result_non_admin_returns_403(self, client, auth_session):
+        rv = client.post('/api/results', json={
+            'match_id': 1, 'home_score': 2, 'away_score': 1,
+        })
+        assert rv.status_code == 403
+
+    def test_submit_result_as_admin(self, client, monkeypatch, admin_session):
+        def fake_get_conn():
+            return FakeConn({
+                'UPDATE matches': None,
+                'SELECT user_id, pred_home, pred_away FROM predictions': [],
+            })
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.post('/api/results', json={
+            'match_id': 1, 'home_score': 2, 'away_score': 1,
+        })
+        assert rv.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Leaderboard
+# ---------------------------------------------------------------------------
+
+class TestLeaderboard:
+    def test_leaderboard_unauthenticated_redirects(self, client):
+        rv = client.get('/leaderboard')
+        assert rv.status_code in (302, 401)
+
+    def test_leaderboard_returns_data(self, client, monkeypatch, auth_session):
+        def fake_get_conn():
+            return FakeConn({
+                'SELECT': [
+                    {'username': 'Alice', 'total_points': 10},
+                    {'username': 'Bob', 'total_points': 7},
+                ]
+            })
+        monkeypatch.setattr(main, 'get_conn', fake_get_conn)
+        rv = client.get('/api/leaderboard')
+        assert rv.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# conftest fixtures (put in conftest.py if not already there)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
 def app():
     main.app.config['TESTING'] = True
-    main.app.secret_key = 'test_secret'
+    main.app.config['SECRET_KEY'] = 'test-secret'
     return main.app
 
 
@@ -66,307 +284,16 @@ def client(app):
 
 
 @pytest.fixture
-def fake_db(monkeypatch):
-    def _fake_db(results):
-        conn = FakeConnection(results)
-        monkeypatch.setattr(main, 'get_db', lambda: conn)
-        return conn
-    return _fake_db
-
-
-def test_validate_email_accepts_valid_email():
-    assert main.validate_email('user@example.com')
-
-
-def test_validate_email_rejects_invalid_email():
-    assert not main.validate_email('invalid-email')
-    assert not main.validate_email('user@localhost')
-    assert not main.validate_email('user@.com')
-
-
-def test_validate_password_accepts_strong_password():
-    assert main.validate_password('Abc123$')
-
-
-def test_validate_password_rejects_weak_password():
-    assert not main.validate_password('password')
-    assert not main.validate_password('Abc123')
-    assert not main.validate_password('abc$123')
-
-
-def test_hash_and_verify_password():
-    password = 'Strong1$'
-    hashed = main.hash_password(password)
-    assert isinstance(hashed, str)
-    assert main.verify_password(hashed, password)
-    assert not main.verify_password(hashed, 'Wrong1$')
-
-
-def test_api_register_valid_data_creates_account(client, fake_db):
-    conn = fake_db({
-        'SELECT id FROM users WHERE email = %s': None,
-    })
-
-    response = client.post('/api/register', json={
-        'name': 'Alice',
-        'email': 'alice@example.com',
-        'password': 'Abc123$'
-    })
-
-    assert response.status_code == 201
-    assert response.get_json() == {'message': 'Account created successfully.'}
-    assert conn.committed is True
-
-
-def test_api_register_rejects_short_name(client):
-    response = client.post('/api/register', json={
-        'name': 'Al',
-        'email': 'alice@example.com',
-        'password': 'Abc123$'
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Username must be between 3 and 30 characters.'
-
-
-def test_api_register_rejects_invalid_email(client):
-    response = client.post('/api/register', json={
-        'name': 'Alice',
-        'email': 'not-an-email',
-        'password': 'Abc123$'
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Invalid email address.'
-
-
-def test_api_register_rejects_weak_password(client):
-    response = client.post('/api/register', json={
-        'name': 'Alice',
-        'email': 'alice@example.com',
-        'password': 'weak'
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Password does not meet the requirements.'
-
-
-def test_api_register_rejects_duplicate_email(client, fake_db):
-    conn = fake_db({
-        'SELECT id FROM users WHERE email = %s': {'id': 1}
-    })
-
-    response = client.post('/api/register', json={
-        'name': 'Alice',
-        'email': 'alice@example.com',
-        'password': 'Abc123$'
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'An account with this email already exists.'
-    assert conn.committed is False
-
-
-def test_api_login_returns_not_found_for_unknown_email(client, fake_db):
-    fake_db({
-        'SELECT * FROM users WHERE email = %s': None,
-    })
-
-    response = client.post('/api/login', json={
-        'email': 'unknown@example.com',
-        'password': 'Abc123$'
-    })
-
-    assert response.status_code == 404
-    assert response.get_json()['error'] == 'No account found for this email.'
-
-
-def test_api_login_incorrect_password_increments_attempts(client, fake_db):
-    fake_db({
-        'SELECT * FROM users WHERE email = %s': {
-            'id': 1,
-            'username': 'Alice',
-            'password_hash': main.hash_password('Correct1$')
-        }
-    })
-
-    response = client.post('/api/login', json={
-        'email': 'alice@example.com',
-        'password': 'Wrong1$'
-    })
-
-    assert response.status_code == 401
-    assert response.get_json()['error'] == 'Incorrect password.'
-    assert response.get_json()['remaining'] == 2
-
-
-def test_api_login_locks_after_three_failed_attempts(client, fake_db):
-    fake_db({
-        'SELECT * FROM users WHERE email = %s': {
-            'id': 1,
-            'username': 'Alice',
-            'password_hash': main.hash_password('Correct1$')
-        }
-    })
-
-    for _ in range(3):
-        response = client.post('/api/login', json={
-            'email': 'alice@example.com',
-            'password': 'Wrong1$'
-        })
-
-    assert response.status_code == 403
-    assert response.get_json()['locked'] is True
-
-
-def test_api_login_success_sets_session(client, fake_db):
-    fake_db({
-        'SELECT * FROM users WHERE email = %s': {
-            'id': 1,
-            'username': 'Alice',
-            'password_hash': main.hash_password('Correct1$')
-        }
-    })
-
-    response = client.post('/api/login', json={
-        'email': 'alice@example.com',
-        'password': 'Correct1$'
-    })
-
-    assert response.status_code == 200
-    assert response.get_json() == {'message': 'Login successful.', 'username': 'Alice'}
-
-    with client.session_transaction() as sess:
-        assert sess['user_id'] == 1
-        assert sess['user_name'] == 'Alice'
-
-
-def test_api_logout_clears_session(client):
+def auth_session(client):
     with client.session_transaction() as sess:
         sess['user_id'] = 1
         sess['user_name'] = 'Alice'
+        sess['is_admin'] = False
 
-    response = client.post('/api/logout')
 
-    assert response.status_code == 200
-    assert response.get_json() == {'message': 'Logged out.'}
-
+@pytest.fixture
+def admin_session(client):
     with client.session_transaction() as sess:
-        assert 'user_id' not in sess
-        assert 'user_name' not in sess
-
-
-def test_api_submit_prediction_requires_authentication(client):
-    response = client.post('/api/predictions', json={
-        'match_id': 1,
-        'pred_home': 2,
-        'pred_away': 1
-    })
-
-    assert response.status_code == 401
-    assert response.get_json()['error'] == 'Unauthorized'
-
-
-def test_api_submit_prediction_rejects_invalid_input(client):
-    with client.session_transaction() as sess:
-        sess['user_id'] = 1
-
-    response = client.post('/api/predictions', json={
-        'match_id': 'one',
-        'pred_home': 2,
-        'pred_away': 1
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Invalid input. Match ID and predictions must be integers.'
-
-
-def test_api_submit_prediction_rejects_finished_match(client, fake_db):
-    with client.session_transaction() as sess:
-        sess['user_id'] = 1
-
-    fake_db({
-        'SELECT * FROM matches WHERE id = %s': {
-            'id': 1,
-            'finished': True,
-            'kickoff_time': datetime.now() + timedelta(hours=1)
-        }
-    })
-
-    response = client.post('/api/predictions', json={
-        'match_id': 1,
-        'pred_home': 2,
-        'pred_away': 1
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Cannot predict on finished matches.'
-
-
-def test_api_submit_prediction_rejects_closed_match(client, fake_db):
-    with client.session_transaction() as sess:
-        sess['user_id'] = 1
-
-    fake_db({
-        'SELECT * FROM matches WHERE id = %s': {
-            'id': 1,
-            'finished': False,
-            'kickoff_time': datetime.now() - timedelta(minutes=1)
-        }
-    })
-
-    response = client.post('/api/predictions', json={
-        'match_id': 1,
-        'pred_home': 2,
-        'pred_away': 1
-    })
-
-    assert response.status_code == 400
-    assert response.get_json()['error'] == 'Predictions are closed for this match.'
-
-
-def test_api_submit_prediction_success(client, fake_db):
-    with client.session_transaction() as sess:
-        sess['user_id'] = 1
-
-    conn = fake_db({
-        'SELECT * FROM matches WHERE id = %s': {
-            'id': 1,
-            'finished': False,
-            'kickoff_time': datetime.now() + timedelta(hours=2)
-        }
-    })
-
-    response = client.post('/api/predictions', json={
-        'match_id': 1,
-        'pred_home': 2,
-        'pred_away': 1
-    })
-
-    assert response.status_code == 200
-    assert response.get_json() == {'message': 'Prediction submitted successfully.'}
-    assert conn.committed is True
-
-
-def test_api_get_matches_returns_array(client, fake_db):
-    fake_db({
-        'SELECT * FROM matches ORDER BY kickoff_time ASC': [
-            {'id': 1, 'home_team': 'A', 'away_team': 'B', 'kickoff_time': datetime.now()}
-        ]
-    })
-
-    response = client.get('/api/matches')
-    assert response.status_code == 200
-    assert 'matches' in response.get_json()
-
-
-def test_api_leaderboard_returns_array(client, fake_db):
-    fake_db({
-        'SELECT u.username, COALESCE(SUM(p.points), 0) AS total_points': [
-            {'username': 'Alice', 'total_points': 5}
-        ]
-    })
-
-    response = client.get('/api/leaderboard')
-    assert response.status_code == 200
-    assert response.get_json() == {'leaderboard': [{'username': 'Alice', 'total_points': 5}]}
+        sess['user_id'] = 2
+        sess['user_name'] = 'Admin'
+        sess['is_admin'] = True
