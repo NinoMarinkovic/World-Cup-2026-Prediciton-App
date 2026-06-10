@@ -60,7 +60,8 @@ const flagMap = {
 function getFlag(team) {
   const code = flagMap[team];
   if (!code) return '<span>🏳️</span>';
-  return `<img src="https://flagcdn.com{code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;">`;
+  // Fixed: Updated to official stable /w40/ path from Flagcdn
+  return `<img src="https://flagcdn.com{code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;object-fit:cover;">`;
 }
 
 const grid       = document.getElementById('matches-grid');
@@ -104,37 +105,18 @@ filterBtns.forEach(btn => {
 });
 
 // ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
-// ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
-// ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
 function parseUtcDate(dateString) {
   if (!dateString) return new Date();
 
-  // Handle standard ISO format if browser returns it ("2026-06-11T19:00:00Z")
-  if (dateString.includes('T')) {
+  // If the API already returns standard ISO format
+  if (dateString.includes('T') || dateString.includes('Z')) {
     return new Date(dateString);
   }
 
-  // Safely extract parts using correct array indices to prevent syntax crashes
-  try {
-    const parts = dateString.split(' ');
-    const dateParts = parts[0].split('-');
-    const timeParts = parts[1].split(':');
-
-    return new Date(Date.UTC(
-      parseInt(dateParts[0], 10),
-      parseInt(dateParts[1], 10) - 1, // JavaScript months start at 0
-      parseInt(dateParts[2], 10),
-      parseInt(timeParts[0], 10),
-      parseInt(timeParts[1], 10),
-      parseInt(timeParts[2] || 0, 10)
-    ));
-  } catch (e) {
-    // Fallback if formatting varies slightly
-    return new Date(dateString);
-  }
+  // Safely convert standard SQL "YYYY-MM-DD HH:mm:ss" to ISO format
+  const isoString = dateString.trim().replace(' ', 'T') + 'Z';
+  return new Date(isoString);
 }
-
-
 
 // ── Render ────────────────────────────────
 function renderMatches(filter) {
@@ -163,7 +145,7 @@ function buildCard(m, now) {
   const locked   = kickoff <= now && !m.finished;
   const finished = m.finished;
 
-  // Converts UTC object automatically into local user time (e.g. Europe/Vienna)
+  // Converts UTC object automatically into local user time (de-AT formatting)
   const kickoffStr = kickoff.toLocaleString('de-AT', {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit'
