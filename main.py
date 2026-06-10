@@ -251,14 +251,14 @@ def api_submit_prediction():
             if datetime.now() >= match['kickoff_time']:
                 return jsonify(error='Predictions are closed for this match.'), 400
 
-            cur.execute("""
-                INSERT INTO predictions (user_id, match_id, pred_home, pred_away)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    pred_home = VALUES(pred_home),
-                    pred_away = VALUES(pred_away),
-                    created_at = CURRENT_TIMESTAMP
-            """, (user_id, match_id, pred_home, pred_away))
+            try:
+                cur.execute("""
+                    INSERT INTO predictions (user_id, match_id, pred_home, pred_away)
+                    VALUES (%s, %s, %s, %s)
+                """, (user_id, match_id, pred_home, pred_away))
+            except pymysql.err.IntegrityError:
+                return jsonify(error='You have already submitted a prediction for this match.'), 400
+
         conn.commit()
     finally:
         conn.close()
