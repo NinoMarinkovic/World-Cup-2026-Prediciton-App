@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spiele — WM Predictor 2026</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/matches.css') }}">
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="nav-logo">⚽ <span>WM</span> Predictor</div>
+  <ul class="nav-links">
+    <li><a href="/matches" class="active">Spiele</a></li>
+    <li><a href="/leaderboard">Leaderboard</a></li>
+  </ul>
+  <div class="nav-user">
+    <span>Eingeloggt als <strong>{{ username }}</strong></span>
+    <button class="btn btn-ghost" id="logout-btn">Abmelden</button>
+  </div>
+</nav>
+
+<!-- ── Page ── -->
+<main class="page">
+
+  <div class="matches-header">
+    <div>
+      <div class="section-label">FIFA World Cup 2026</div>
+      <h1 class="section-title">Spiele & Tipps</h1>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="open">Offen</button>
+    <button class="filter-btn" data-filter="live">Live</button>
+    <button class="filter-btn" data-filter="finished">Beendet</button>
+    <button class="filter-btn" data-filter="all">Alle</button>
+  </div>
+
+  <!-- Match grid -->
+  <div class="matches-grid" id="matches-grid">
+    <!-- JS rendered -->
+  </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/matches.js') }}"></script>
+</body>
+</html>

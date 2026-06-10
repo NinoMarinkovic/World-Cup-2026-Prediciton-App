@@ -1,0 +1,164 @@
+/* ══════════════════════════════════════════
+   INDEX — Login / Register
+   ══════════════════════════════════════════ */
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── Left — Hero panel ── */
+.auth-hero {
+  background: var(--green);
+  background-image:
+    radial-gradient(ellipse at 30% 60%, rgba(201,168,76,0.08) 0%, transparent 60%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.025) 39px,
+      rgba(255,255,255,0.025) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.025) 39px,
+      rgba(255,255,255,0.025) 40px
+    );
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-hero::before {
+  content: '';
+  position: absolute;
+  bottom: -80px; right: -80px;
+  width: 360px; height: 360px;
+  border: 60px solid rgba(201,168,76,0.07);
+  border-radius: 50%;
+}
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 220px; height: 220px;
+  border: 40px solid rgba(201,168,76,0.05);
+  border-radius: 50%;
+}
+
+.hero-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 4.5rem;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  color: var(--chalk);
+  margin-bottom: 1.5rem;
+}
+.hero-title em {
+  font-style: normal;
+  color: var(--gold);
+}
+.hero-desc {
+  font-size: 1rem;
+  color: rgba(245,242,232,0.65);
+  line-height: 1.65;
+  max-width: 320px;
+  margin-bottom: 2.5rem;
+}
+.hero-stats {
+  display: flex;
+  gap: 2rem;
+}
+.hero-stat-val {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--gold);
+  line-height: 1;
+}
+.hero-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* ── Right — Auth form panel ── */
+.auth-panel {
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2.5rem;
+}
+
+.auth-box {
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background var(--transition), color var(--transition);
+  border-radius: 0;
+}
+.auth-tab.active {
+  background: var(--gold);
+  color: var(--black);
+}
+
+.auth-form { display: flex; flex-direction: column; gap: 1.1rem; }
+.auth-form .btn-primary { margin-top: 0.5rem; width: 100%; padding: 0.75rem; font-size: 0.9375rem; }
+
+.auth-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.auth-footer a { color: var(--gold); }
+.auth-footer a:hover { color: var(--gold-lite); }
+
+/* ── Password rules ── */
+.pw-rules {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  background: rgba(201,168,76,0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-hero { display: none; }
+}

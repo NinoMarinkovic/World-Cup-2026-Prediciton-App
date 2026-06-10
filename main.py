@@ -1,0 +1,316 @@
+import bcrypt
+import re
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+import pymysql
+from flask import Flask, request, jsonify, session, render_template
+
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
+
+DB_CONFIG = {
+    'host':        os.getenv('DB_HOST'),
+    'port':        int(os.getenv('DB_PORT', 3306)),
+    'user':        os.getenv('DB_USER'),
+    'password':    os.getenv('DB_PASSWORD'),
+    'db':          os.getenv('DB_NAME'),
+    'charset':     'utf8mb4',
+    'cursorclass': pymysql.cursors.DictCursor,
+    'ssl':         {'ca': os.getenv('DB_SSL_CA')}
+}
+
+def get_db():
+    return pymysql.connect(**DB_CONFIG)
+
+
+def init_db():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) NOT NULL,
+                    email VARCHAR(150) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS matches (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    home_team VARCHAR(100) NOT NULL,
+                    away_team VARCHAR(100) NOT NULL,
+                    kickoff_time DATETIME NOT NULL,
+                    home_score INT DEFAULT NULL,
+                    away_score INT DEFAULT NULL,
+                    finished BOOLEAN DEFAULT FALSE
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    match_id INT NOT NULL,
+                    pred_home INT NOT NULL,
+                    pred_away INT NOT NULL,
+                    points INT DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_prediction (user_id, match_id)
+                )
+            """)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ══════════════════════════════════════════
+# Validation
+# ══════════════════════════════════════════
+
+def validate_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def validate_password(password):
+    reg = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$#%])[A-Za-z\d@$#%]{6,20}$"
+    return re.search(reg, password) is not None
+
+
+# ══════════════════════════════════════════
+# Security
+# ══════════════════════════════════════════
+
+def hash_password(password):
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(stored_hash, password):
+    return bcrypt.checkpw(password.encode(), stored_hash.encode())
+
+
+# ══════════════════════════════════════════
+# Flask Routes – Seiten
+# ══════════════════════════════════════════
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+# ══════════════════════════════════════════
+# Flask Routes – API
+# ══════════════════════════════════════════
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    data     = request.json
+    name     = (data.get('name') or '').strip()
+    email    = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    if not name:
+        return jsonify(error='Please enter your full name.'), 400
+    if len(name) < 3 or len(name) > 30:
+        return jsonify(error='Username must be between 3 and 30 characters.'), 400
+    if not validate_email(email):
+        return jsonify(error='Invalid email address.'), 400
+    if not validate_password(password):
+        return jsonify(error='Password does not meet the requirements.'), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+            if cur.fetchone():
+                return jsonify(error='An account with this email already exists.'), 400
+            cur.execute(
+                "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+                (name, email, hash_password(password))
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return jsonify(message='Account created successfully.'), 201
+
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data     = request.json
+    email    = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not user:
+        return jsonify(error='No account found for this email.'), 404
+
+    attempts_key = f'attempts_{email}'
+    attempts = session.get(attempts_key, 0)
+
+    if attempts >= 3:
+        return jsonify(error='Account locked. Too many failed attempts.', locked=True), 403
+
+    if not verify_password(user['password_hash'], password):
+        session[attempts_key] = attempts + 1
+        remaining = 3 - session[attempts_key]
+        if remaining <= 0:
+            return jsonify(error='Account locked.', locked=True, remaining=0), 403
+        return jsonify(error='Incorrect password.', remaining=remaining), 401
+
+    session[attempts_key] = 0
+    session['user_id'] = user['id']
+    session['user_name'] = user['username']
+
+    return jsonify(message='Login successful.', username=user['username'])
+
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.clear()
+    return jsonify(message='Logged out.'), 200
+
+
+def get_current_user_id():
+    return session.get('user_id')
+
+
+@app.route('/api/predictions', methods=['POST'])
+def api_submit_prediction():
+    if 'user_id' not in session:
+        return jsonify(error='Unauthorized'), 401
+
+    data = request.json
+    match_id  = data.get('match_id')
+    pred_home = data.get('pred_home')
+    pred_away = data.get('pred_away')
+
+    if not all(isinstance(x, int) for x in [match_id, pred_home, pred_away]):
+        return jsonify(error='Invalid input. Match ID and predictions must be integers.'), 400
+
+    user_id = get_current_user_id()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM matches WHERE id = %s", (match_id,))
+            match = cur.fetchone()
+            if not match:
+                return jsonify(error='Match not found.'), 404
+            if match['finished']:
+                return jsonify(error='Cannot predict on finished matches.'), 400
+            if datetime.now() >= match['kickoff_time']:
+                return jsonify(error='Predictions are closed for this match.'), 400
+
+            cur.execute("""
+                INSERT INTO predictions (user_id, match_id, pred_home, pred_away)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    pred_home = VALUES(pred_home),
+                    pred_away = VALUES(pred_away),
+                    created_at = CURRENT_TIMESTAMP
+            """, (user_id, match_id, pred_home, pred_away))
+        conn.commit()
+    finally:
+        conn.close()
+
+    return jsonify(message='Prediction submitted successfully.'), 200
+
+
+@app.route('/api/matches', methods=['GET'])
+def api_get_matches():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM matches ORDER BY kickoff_time ASC")
+            matches = cur.fetchall()
+    finally:
+        conn.close()
+
+    return jsonify(matches=matches), 200
+
+
+@app.route('/api/leaderboard', methods=['GET'])
+def api_leaderboard():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT u.username, COALESCE(SUM(p.points), 0) AS total_points
+                FROM users u
+                LEFT JOIN predictions p ON u.id = p.user_id
+                GROUP BY u.id
+                ORDER BY total_points DESC, u.username ASC
+            """)
+            leaderboard = cur.fetchall()
+    finally:
+        conn.close()
+
+    return jsonify(leaderboard=leaderboard), 200
+
+@app.route('/api/results', methods=['POST'])
+def api_submit_results():
+    data = request.json
+    match_id   = data.get('match_id')
+    home_score = data.get('home_score')
+    away_score = data.get('away_score')
+
+    if not all(isinstance(x, int) for x in [match_id, home_score, away_score]):
+        return jsonify(error='Invalid input. Match ID and scores must be integers.'), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM matches WHERE id = %s", (match_id,))
+            match = cur.fetchone()
+            if not match:
+                return jsonify(error='Match not found.'), 404
+            if match['finished']:
+                return jsonify(error='Results already submitted for this match.'), 400
+
+            cur.execute("""
+                UPDATE matches
+                SET home_score = %s, away_score = %s, finished = TRUE
+                WHERE id = %s
+            """, (home_score, away_score, match_id))
+
+            cur.execute("""
+                UPDATE predictions
+                SET points =
+                    CASE
+                        WHEN pred_home = %s AND pred_away = %s THEN 3
+                        WHEN (pred_home > pred_away AND %s > %s)
+                          OR (pred_home < pred_away AND %s < %s)
+                          OR (pred_home = pred_away AND %s = %s) THEN 1
+                        ELSE 0
+                    END
+                WHERE match_id = %s
+            """, (home_score, away_score,
+                  home_score, away_score,
+                  home_score, away_score,
+                  home_score, away_score,
+                  match_id))
+
+        conn.commit()
+        return jsonify(message='Results submitted and points updated successfully.'), 200
+    finally:
+        conn.close()
+
+
+# ══════════════════════════════════════════
+# Start
+# ══════════════════════════════════════════
+
+if __name__ == '__main__':
+    init_db()
+    app.run(debug=True)

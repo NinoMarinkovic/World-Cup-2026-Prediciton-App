@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WM Predictor 2026 — Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- ── Left: Hero ── -->
+  <div class="auth-hero">
+    <div class="hero-eyebrow">FIFA World Cup 2026</div>
+    <h1 class="hero-title">WM<br><em>Predictor</em><br>2026</h1>
+    <p class="hero-desc">
+      Tippe Ergebnisse, sammle Punkte, beweise dass du der beste Taktiker bist.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-val">48</div>
+        <div class="hero-stat-label">Spiele</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">3</div>
+        <div class="hero-stat-label">Gastgeberländer</div>
+      </div>
+      <div>
+        <div class="hero-stat-val">32</div>
+        <div class="hero-stat-label">Teams</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Auth form ── -->
+  <div class="auth-panel">
+    <div class="auth-box">
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-target="login-form">Anmelden</button>
+        <button class="auth-tab" data-target="register-form">Registrieren</button>
+      </div>
+
+      <div id="auth-alert" class="alert alert-error" style="display:none; margin-bottom: 1rem;"></div>
+
+      <!-- Login -->
+      <form class="auth-form" id="login-form">
+        <div class="input-group">
+          <label for="login-email">E-Mail</label>
+          <input type="email" id="login-email" placeholder="deine@email.at" required autocomplete="email">
+        </div>
+        <div class="input-group">
+          <label for="login-password">Passwort</label>
+          <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary">Log in</button>
+      </form>
+
+      <!-- Register -->
+      <form class="auth-form hidden" id="register-form">
+        <div class="input-group">
+          <label for="reg-name">Benutzername</label>
+          <input type="text" id="reg-name" placeholder="DeinName" minlength="3" maxlength="30" required>
+        </div>
+        <div class="input-group">
+          <label for="reg-email">E-Mail</label>
+          <input type="email" id="reg-email" placeholder="deine@email.at" required autocomplete="email">
+        </div>
+        <div class="input-group">
+          <label for="reg-password">Passwort</label>
+          <input type="password" id="reg-password" placeholder="Min. 6 Zeichen" required autocomplete="new-password">
+          <div class="pw-rules">6–20 Zeichen · Groß- und Kleinbuchstaben · Zahl · Sonderzeichen (@$#%)</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Account erstellen</button>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html>

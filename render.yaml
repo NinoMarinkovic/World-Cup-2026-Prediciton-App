@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: wm-prediction-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --bind 0.0.0.0:8000
+    envVars:
+      - key: SECRET_KEY
+        value: "REPLACE_WITH_SECRET_KEY"
+      - key: DB_HOST
+        value: "REPLACE_WITH_DB_HOST"
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        value: "REPLACE_WITH_DB_USER"
+      - key: DB_PASSWORD
+        value: "REPLACE_WITH_DB_PASSWORD"
+      - key: DB_NAME
+        value: "REPLACE_WITH_DB_NAME"

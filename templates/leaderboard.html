@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard — WM Predictor 2026</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/leaderboard.css') }}">
+</head>
+<!-- Pass current username to JS via data attribute -->
+<body data-username="{{ username }}">
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="nav-logo">⚽ <span>WM</span> Predictor</div>
+  <ul class="nav-links">
+    <li><a href="/matches">Spiele</a></li>
+    <li><a href="/leaderboard" class="active">Leaderboard</a></li>
+  </ul>
+  <div class="nav-user">
+    <span>Eingeloggt als <strong>{{ username }}</strong></span>
+    <button class="btn btn-ghost" id="logout-btn">Abmelden</button>
+  </div>
+</nav>
+
+<!-- ── Page ── -->
+<main class="page">
+
+  <div class="lb-header">
+    <div>
+      <div class="section-label">Rangliste</div>
+      <h1 class="section-title">Leaderboard</h1>
+    </div>
+  </div>
+
+  <!-- Podium -->
+  <div class="podium" id="podium">
+    <div class="lb-loading"><div class="loader"></div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Full table -->
+  <div class="lb-table-wrap">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Spieler</th>
+          <th style="text-align:right">Punkte</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body">
+        <tr><td colspan="3" class="lb-loading"><div class="loader"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/leaderboard.js') }}"></script>
+</body>
+</html>
