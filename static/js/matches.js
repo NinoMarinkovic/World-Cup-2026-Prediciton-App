@@ -8,7 +8,7 @@ const flagMap = {
   'South Korea': 'kr',
   'Czechia': 'cz',
   'Canada': 'ca',
-  'Bosnia & Herz.': 'ba',
+  'Bosnia & Herz.': 'ba', // Matches Python script string perfectly
   'Qatar': 'qa',
   'Switzerland': 'ch',
   'Brazil': 'br',
@@ -20,7 +20,7 @@ const flagMap = {
   'Australia': 'au',
   'Turkey': 'tr',
   'Germany': 'de',
-  'Curacao': 'cw',
+  'Curacao': 'cw', // Spelled without special characters to match script
   'Ivory Coast': 'ci',
   'Ecuador': 'ec',
   'Netherlands': 'nl',
@@ -50,7 +50,12 @@ const flagMap = {
   'Croatia': 'hr',
   'Ghana': 'gh',
   'Panama': 'pa',
+  'Tunisia': 'tn', // Added for Group F
+  'Irak': 'iq',    // Added for Group I (Matches script naming)
+  'Austria': 'at', // Added for Group J
+  'Jordan': 'jo'   // Added for Group J
 };
+
 
 function getFlag(team) {
   const code = flagMap[team];
@@ -131,9 +136,9 @@ function buildCard(m, now) {
   });
 
   let badge = '';
-  if (finished)    badge = '<span class="badge badge-finished">Abgeschlossen</span>';
-  else if (locked) badge = '<span class="badge badge-locked">Gesperrt</span>';
-  else             badge = '<span class="badge badge-open">Tipp offen</span>';
+  if (finished)    badge = '<span class="badge badge-finished">Completed</span>';
+  else if (locked) badge = '<span class="badge badge-locked">Blocked</span>';
+  else             badge = '<span class="badge badge-open">Tipp open</span>';
 
   let centerBlock = '';
   if (finished) {
@@ -174,7 +179,7 @@ function buildCard(m, now) {
       </div>
       ${!finished && !locked ? `
       <div class="card-footer">
-        <button class="btn btn-primary predict-btn" data-match-id="${m.id}">Tipp abgeben</button>
+        <button class="btn btn-primary predict-btn" data-match-id="${m.id}">Submit a tip</button>
       </div>` : ''}
     </div>`;
 }
@@ -187,7 +192,7 @@ async function submitPrediction(btn) {
   const predAway = parseInt(card.querySelector('.pred-away').value);
 
   if (isNaN(predHome) || isNaN(predAway)) {
-    showToast('Bitte beide Felder ausfüllen.', 'error');
+    showToast('Please fill in both fields.', 'error');
     return;
   }
 
@@ -203,19 +208,19 @@ async function submitPrediction(btn) {
     const data = await res.json();
 
     if (!res.ok) {
-      showToast(data.error || 'Fehler beim Speichern.', 'error');
+      showToast(data.error || 'Error saving.', 'error');
       btn.disabled = false;
-      btn.textContent = 'Tipp abgeben';
+      btn.textContent = 'Submit a tip';
     } else {
-      showToast(`Tipp gespeichert: ${predHome} : ${predAway}`, 'success');
-      btn.textContent = '✓ Gespeichert';
+      showToast(`Tip saved: ${predHome} : ${predAway}`, 'success');
+      btn.textContent = '✓ Saved';
       btn.classList.add('btn-ghost');
       btn.classList.remove('btn-primary');
     }
   } catch {
-    showToast('Netzwerkfehler. Bitte erneut versuchen.', 'error');
+    showToast('Network error. Please try again.', 'error');
     btn.disabled = false;
-    btn.textContent = 'Tipp abgeben';
+    btn.textContent = 'Submit a tip';
   }
 }
 
