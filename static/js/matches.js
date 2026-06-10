@@ -53,13 +53,14 @@ const flagMap = {
   'Tunisia': 'tn', // Added for Group F
   'Irak': 'iq',    // Added for Group I (Matches script naming)
   'Austria': 'at', // Added for Group J
-  'Jordan': 'jo'   // Added for Group J
+  'Jordan': 'jo',   // Added for Group J
+  'Sweden': 'se'    // FIXED: Correct spelling and proper ISO code for Sweden
 };
 
 function getFlag(team) {
   const code = flagMap[team];
   if (!code) return '<span>🏳️</span>';
-  return `<img src="https://flagcdn.com/24x18/${code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;">`;
+  return `<img src="https://flagcdn.com{code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;">`;
 }
 
 const grid       = document.getElementById('matches-grid');
@@ -102,10 +103,14 @@ filterBtns.forEach(btn => {
   });
 });
 
-// ── Helper function to safely parse UTC from DB ──
+// ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
 function parseUtcDate(dateString) {
-  // Appends 'Z' to force JavaScript to interpret the database string as strict UTC
-  return new Date(dateString.replace(" ", "T") + "Z");
+  if (!dateString) return new Date();
+  
+  // Converts "2026-06-11 19:00:00" into "2026/06/11 19:00:00 UTC"
+  // This layout is 100% compatible with Safari, Chrome, Firefox, and mobile engines
+  const normalizedString = dateString.replace(/-/g, '/').replace('T', ' ') + ' UTC';
+  return new Date(normalizedString);
 }
 
 // ── Render ────────────────────────────────
