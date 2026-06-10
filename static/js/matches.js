@@ -1,6 +1,11 @@
 /* ══════════════════════════════════════════
    MATCHES.JS — Matches & Predictions
    ══════════════════════════════════════════ */
+   function esc(str) {
+  return str.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
 
 const flagMap = {
   'Mexico': 'mx',
@@ -181,14 +186,14 @@ function buildCard(m, now) {
         <div class="teams">
           <div class="team">
             <div class="team-flag">${getFlag(m.home_team)}</div>
-            <div class="team-name">${m.home_team}</div>
+            <div class="team-name">${esc(m.home_team)}</div>
           </div>
 
           ${centerBlock}
 
           <div class="team">
             <div class="team-flag">${getFlag(m.away_team)}</div>
-            <div class="team-name">${m.away_team}</div>
+            <div class="team-name">${esc(m.away_team)}</div>
           </div>
         </div>
         ${inputRow}
