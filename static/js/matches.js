@@ -104,6 +104,7 @@ filterBtns.forEach(btn => {
 });
 
 // ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
+// ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
 function parseUtcDate(dateString) {
   if (!dateString) return new Date();
 
@@ -113,7 +114,6 @@ function parseUtcDate(dateString) {
   }
 
   // Safely extract parts from standard SQL format: "2026-06-11 19:00:00"
-  // This bypasses browser string parsing bugs entirely
   try {
     const parts = dateString.split(' ');
     const dateParts = parts[0].split('-');
@@ -132,6 +132,7 @@ function parseUtcDate(dateString) {
     return new Date(dateString);
   }
 }
+
 
 // ── Render ────────────────────────────────
 function renderMatches(filter) {
