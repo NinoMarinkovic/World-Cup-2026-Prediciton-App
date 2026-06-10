@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 import pymysql
-from flask import Flask, request, jsonify, session, render_template
+from flask import Flask, request, jsonify, session, render_template, redirect
 
 load_dotenv()
 
@@ -36,6 +36,7 @@ def init_db():
                     username VARCHAR(100) NOT NULL,
                     email VARCHAR(150) NOT NULL UNIQUE,
                     password_hash VARCHAR(255) NOT NULL,
+                    is_admin TINYINT(1) DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -92,6 +93,26 @@ def hash_password(password):
 def verify_password(stored_hash, password):
     return bcrypt.checkpw(password.encode(), stored_hash.encode())
 
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect('/')
+        return f(*args, **kwargs)
+    return decorated
+
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify(error='Unauthorized'), 401
+        if not session.get('is_admin'):
+            return jsonify(error='Forbidden. Admin only.'), 403
+        return f(*args, **kwargs)
+    return decorated
+
 
 # ══════════════════════════════════════════
 # Flask Routes – Seiten
@@ -101,10 +122,27 @@ def verify_password(stored_hash, password):
 def index():
     return render_template('index.html')
 
+@app.route('/matches')
+@login_required
+def matches():
+    return render_template('matches.html', username=session['user_name'])
+
+@app.route('/leaderboard')
+@login_required
+def leaderboard():
+    return render_template('leaderboard.html', username=session['user_name'])
+
 
 # ══════════════════════════════════════════
 # Flask Routes – API
 # ══════════════════════════════════════════
+
+@app.route('/api/me')
+def api_me():
+    if 'user_id' not in session:
+        return jsonify(error='Unauthorized'), 401
+    return jsonify(username=session['user_name'])
+
 
 @app.route('/api/register', methods=['POST'])
 def api_register():
@@ -170,8 +208,9 @@ def api_login():
         return jsonify(error='Incorrect password.', remaining=remaining), 401
 
     session[attempts_key] = 0
-    session['user_id'] = user['id']
+    session['user_id']   = user['id']
     session['user_name'] = user['username']
+    session['is_admin']  = bool(user['is_admin'])
 
     return jsonify(message='Login successful.', username=user['username'])
 
@@ -258,7 +297,9 @@ def api_leaderboard():
 
     return jsonify(leaderboard=leaderboard), 200
 
+
 @app.route('/api/results', methods=['POST'])
+@admin_required
 def api_submit_results():
     data = request.json
     match_id   = data.get('match_id')
