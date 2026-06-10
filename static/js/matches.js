@@ -8,7 +8,7 @@ const flagMap = {
   'South Korea': 'kr',
   'Czechia': 'cz',
   'Canada': 'ca',
-  'Bosnia & Herz.': 'ba', // Matches Python script string perfectly
+  'Bosnia & Herz.': 'ba',
   'Qatar': 'qa',
   'Switzerland': 'ch',
   'Brazil': 'br',
@@ -20,7 +20,7 @@ const flagMap = {
   'Australia': 'au',
   'Turkey': 'tr',
   'Germany': 'de',
-  'Curacao': 'cw', // Spelled without special characters to match script
+  'Curacao': 'cw',
   'Ivory Coast': 'ci',
   'Ecuador': 'ec',
   'Netherlands': 'nl',
@@ -50,18 +50,19 @@ const flagMap = {
   'Croatia': 'hr',
   'Ghana': 'gh',
   'Panama': 'pa',
-  'Tunisia': 'tn', // Added for Group F
-  'Irak': 'iq',    // Added for Group I (Matches script naming)
-  'Austria': 'at', // Added for Group J
-  'Jordan': 'jo',  // Added for Group J
-  'Sweden': 'se'   // Fixed ISO code for Sweden
+  'Tunisia': 'tn',
+  'Irak': 'iq',
+  'Austria': 'at',
+  'Jordan': 'jo',
+  'Sweden': 'se'
 };
 
 function getFlag(team) {
   const code = flagMap[team];
   if (!code) return '<span>🏳️</span>';
-  // Fixed: Updated to official stable /w40/ path from Flagcdn
-  return `<img src="https://flagcdn.com{code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;object-fit:cover;">`;
+
+  // FIX: korrekte FlagCDN Struktur mit w40
+  return `<img src="https://flagcdn.com/w40/${code}.png" alt="${team}" style="width:28px;height:21px;border-radius:2px;object-fit:cover;">`;
 }
 
 const grid       = document.getElementById('matches-grid');
@@ -80,7 +81,7 @@ async function fetchUser() {
   try {
     const res = await fetch('/api/me');
     if (res.ok) currentUser = await res.json();
-  } catch { /* not logged in */ }
+  } catch {}
 }
 
 // ── Fetch matches ─────────────────────────
@@ -104,16 +105,14 @@ filterBtns.forEach(btn => {
   });
 });
 
-// ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
+// ── Helper function to safely parse UTC from DB ──
 function parseUtcDate(dateString) {
   if (!dateString) return new Date();
 
-  // If the API already returns standard ISO format
   if (dateString.includes('T') || dateString.includes('Z')) {
     return new Date(dateString);
   }
 
-  // Safely convert standard SQL "YYYY-MM-DD HH:mm:ss" to ISO format
   const isoString = dateString.trim().replace(' ', 'T') + 'Z';
   return new Date(isoString);
 }
@@ -145,16 +144,15 @@ function buildCard(m, now) {
   const locked   = kickoff <= now && !m.finished;
   const finished = m.finished;
 
-  // Converts UTC object automatically into local user time (de-AT formatting)
   const kickoffStr = kickoff.toLocaleString('de-AT', {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit'
   });
 
   let badge = '';
-  if (finished)    badge = '<span class="badge badge-finished">Completed</span>';
+  if (finished) badge = '<span class="badge badge-finished">Completed</span>';
   else if (locked) badge = '<span class="badge badge-locked">Blocked</span>';
-  else             badge = '<span class="badge badge-open">Tip open</span>';
+  else badge = '<span class="badge badge-open">Tip open</span>';
 
   let centerBlock = '';
   if (finished) {
@@ -167,9 +165,9 @@ function buildCard(m, now) {
   if (!finished && !locked) {
     inputRow = `
       <div class="prediction-row">
-        <input type="number" class="pred-home" min="0" max="99" placeholder="0" value="">
+        <input type="number" class="pred-home" min="0" max="99" placeholder="0">
         <div class="pred-separator">:</div>
-        <input type="number" class="pred-away" min="0" max="99" placeholder="0" value="">
+        <input type="number" class="pred-away" min="0" max="99" placeholder="0">
       </div>`;
   }
 
@@ -185,7 +183,9 @@ function buildCard(m, now) {
             <div class="team-flag">${getFlag(m.home_team)}</div>
             <div class="team-name">${m.home_team}</div>
           </div>
+
           ${centerBlock}
+
           <div class="team">
             <div class="team-flag">${getFlag(m.away_team)}</div>
             <div class="team-name">${m.away_team}</div>
@@ -193,6 +193,7 @@ function buildCard(m, now) {
         </div>
         ${inputRow}
       </div>
+
       ${!finished && !locked ? `
       <div class="card-footer">
         <button class="btn btn-primary predict-btn" data-match-id="${m.id}">Submit a tip</button>
@@ -221,6 +222,7 @@ async function submitPrediction(btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ match_id: matchId, pred_home: predHome, pred_away: predAway })
     });
+
     const data = await res.json();
 
     if (!res.ok) {
