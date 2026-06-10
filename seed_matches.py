@@ -1,5 +1,5 @@
 """
-seed_matches.py — Insert World Cup 2026 group stage matches into DB (CET/AT source times)
+seed_matches.py — Clean old entries and insert World Cup 2026 group stage matches into Aiven DB (CET/AT source times)
 """
 
 import os
@@ -59,7 +59,7 @@ MATCHES = [
 
     # ── Group D ──
     ("USA", "Paraguay", "2026-06-13 03:00:00"),
-    ("Australia", "Turkey", "2026-06-14 06:00:00"),  # FIXED
+    ("Australia", "Turkey", "2026-06-14 06:00:00"),
     ("USA", "Australia", "2026-06-18 21:00:00"),
     ("Turkey", "Paraguay", "2026-06-20 05:00:00"),
     ("Turkey", "USA", "2026-06-26 04:00:00"),
@@ -67,7 +67,7 @@ MATCHES = [
 
     # ── Group E ──
     ("Germany", "Curacao", "2026-06-14 19:00:00"),
-    ("Ivory Coast", "Ecuador", "2026-06-15 01:00:00"),  # FIXED
+    ("Ivory Coast", "Ecuador", "2026-06-15 01:00:00"),
     ("Germany", "Ivory Coast", "2026-06-20 22:00:00"),
     ("Ecuador", "Curacao", "2026-06-21 02:00:00"),
     ("Curacao", "Ivory Coast", "2026-06-25 22:00:00"),
@@ -125,7 +125,7 @@ MATCHES = [
     ("Ghana", "Panama", "2026-06-18 01:00:00"),
     ("England", "Croatia", "2026-06-17 22:00:00"),
     ("England", "Ghana", "2026-06-23 22:00:00"),
-    ("Panama", "Kroatien", "2026-06-24 01:00:00"),
+    ("Panama", "Croatia", "2026-06-24 01:00:00"),
     ("Panama", "England", "2026-06-27 23:00:00"),
     ("Croatia", "Ghana", "2026-06-27 23:00:00"),
 ]
@@ -134,23 +134,24 @@ MATCHES = [
 def seed():
     conn = pymysql.connect(**DB_CONFIG)
     inserted = 0
-    skipped = 0
 
     try:
         with conn.cursor() as cur:
+            # Disable foreign key checks temporarily to avoid constraint issues during truncate
+            cur.execute("SET FOREIGN_KEY_CHECKS = 0;")
+            
+            # Wipe the old matches data from Aiven
+            print("Wiping old test data from Aiven matches table...")
+            cur.execute("TRUNCATE TABLE matches;")
+            
+            # Re-enable foreign key checks
+            cur.execute("SET FOREIGN_KEY_CHECKS = 1;")
+            
+            # Insert the new, correct matches
+            print("Seeding correct World Cup 2026 matches...")
             for home, away, kickoff_at in MATCHES:
                 kickoff_utc = to_utc(kickoff_at)
-                
-                # Check for existing entry to prevent duplicates
-                cur.execute(
-                    "SELECT id FROM matches WHERE home_team=%s AND away_team=%s AND kickoff_time=%s",
-                    (home, away, kickoff_utc),
-                )
-                if cur.fetchone():
-                    skipped += 1
-                    continue
 
-                # Insert new match
                 cur.execute(
                     """
                     INSERT INTO matches (home_team, away_team, kickoff_time)
@@ -161,10 +162,10 @@ def seed():
                 inserted += 1
 
         conn.commit()
-        print(f"Inserted: {inserted}, Skipped: {skipped}")
+        print(f"Successfully seeded! Inserted: {inserted} matches.")
     except Exception as e:
         conn.rollback()
-        print(f"Error: {e}")
+        print(f"Error during database operations: {e}")
     finally:
         conn.close()
 
