@@ -2,6 +2,60 @@
    MATCHES.JS — Spiele & Tipps
    ══════════════════════════════════════════ */
 
+const flagMap = {
+  'Mexico': '🇲🇽',
+  'South Africa': '🇿🇦',
+  'South Korea': '🇰🇷',
+  'Czechia': '🇨🇿',
+  'Canada': '🇨🇦',
+  'Bosnia & Herz.': '🇧🇦',
+  'Qatar': '🇶🇦',
+  'Switzerland': '🇨🇭',
+  'Brazil': '🇧🇷',
+  'Morocco': '🇲🇦',
+  'Haiti': '🇭🇹',
+  'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'USA': '🇺🇸',
+  'Paraguay': '🇵🇾',
+  'Australia': '🇦🇺',
+  'Turkey': '🇹🇷',
+  'Germany': '🇩🇪',
+  'Curacao': '🇨🇼',
+  'Ivory Coast': '🇨🇮',
+  'Ecuador': '🇪🇨',
+  'Netherlands': '🇳🇱',
+  'Japan': '🇯🇵',
+  'Peru': '🇵🇪',
+  'Senegal': '🇸🇳',
+  'Belgium': '🇧🇪',
+  'Egypt': '🇪🇬',
+  'Iran': '🇮🇷',
+  'New Zealand': '🇳🇿',
+  'Spain': '🇪🇸',
+  'Cabo Verde': '🇨🇻',
+  'Saudi Arabia': '🇸🇦',
+  'Uruguay': '🇺🇾',
+  'Argentina': '🇦🇷',
+  'Algeria': '🇩🇿',
+  'Nigeria': '🇳🇬',
+  'Honduras': '🇭🇳',
+  'France': '🇫🇷',
+  'Norway': '🇳🇴',
+  'Congo DR': '🇨🇩',
+  'Portugal': '🇵🇹',
+  'Venezuela': '🇻🇪',
+  'Uzbekistan': '🇺🇿',
+  'Colombia': '🇨🇴',
+  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Croatia': '🇭🇷',
+  'Ghana': '🇬🇭',
+  'Panama': '🇵🇦',
+};
+
+function getFlag(team) {
+  return flagMap[team] || '🏳️';
+}
+
 const grid       = document.getElementById('matches-grid');
 const filterBtns = document.querySelectorAll('.filter-btn');
 let allMatches   = [];
@@ -58,7 +112,6 @@ function renderMatches(filter) {
 
   grid.innerHTML = list.map(m => buildCard(m, now)).join('');
 
-  // Bind submit buttons
   grid.querySelectorAll('.predict-btn').forEach(btn => {
     btn.addEventListener('click', () => submitPrediction(btn));
   });
@@ -106,12 +159,12 @@ function buildCard(m, now) {
       <div class="card-body">
         <div class="teams">
           <div class="team">
-            <div class="team-flag">${m.home_flag || '🏳️'}</div>
+            <div class="team-flag">${getFlag(m.home_team)}</div>
             <div class="team-name">${m.home_team}</div>
           </div>
           ${centerBlock}
           <div class="team">
-            <div class="team-flag">${m.away_flag || '🏳️'}</div>
+            <div class="team-flag">${getFlag(m.away_team)}</div>
             <div class="team-name">${m.away_team}</div>
           </div>
         </div>
@@ -169,7 +222,7 @@ function showSkeletons() {
   grid.innerHTML = Array(6).fill('<div class="skeleton-card"></div>').join('');
 }
 
-// ── Toast ──────────────────────────────────
+// ── Toast ─────────────────────────────────
 function showToast(msg, type = 'success') {
   const t = document.createElement('div');
   t.className = `toast toast-${type}`;
