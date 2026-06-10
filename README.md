@@ -1,35 +1,38 @@
 # World Cup 2026 Prediction App
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3-green.svg)](https://flask.palletsprojects.com/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.3-green.svg)](https://flask.palletsprojects.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/USERNAME/REPO_NAME/main.yml?branch=main)](https://github.com/features/actions)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/USERNAME/REPO_NAME/ci.yml?branch=main)](https://github.com/features/actions)
 
 ## About
-The World Cup 2026 Prediction App is a web application for predicting FIFA World Cup 2026 matches. Users can register, log in, and submit match predictions. The app collects results, calculates rankings, and displays a competitive leaderboard.
 
-Please note: To ensure consistent scheduling across different server deployments, all match kickoff times are stored and processed strictly in UTC time. The application automatically handles the timezone conversion to deliver a seamless experience for users worldwide.
+The World Cup 2026 Prediction App is a Flask web application for predicting football matches. Users can register, log in, submit predictions, and view a live leaderboard. The app supports admin management for match creation and result submission.
+
+Kickoff times are handled in UTC to keep scheduling consistent across deployments.
 
 ## Features
 
-- User authentication (registration, login, logout)
-- Match predictions for World Cup games
-- Personal prediction history
-- Live leaderboard with ranking
-- Database-backed storage for users, matches, and predictions
-- Docker support for local development and production
-- CI/CD with GitHub Actions
-- Deployment on Render with Aiven MySQL
+- User registration, login and logout
+- Match prediction submission
+- Live leaderboard with leaderboard ranking
+- Admin panel for adding matches and submitting results
+- Rate limiting for API endpoints via Flask-Limiter
+- MySQL-backed storage for users, matches and predictions
+- Docker support
+- GitHub Actions CI
+- Render deployment configuration
 
 ## Tech Stack
 
-- Python
-- Flask
+- Python 3.13
+- Flask 3.1.3
+- Flask-Limiter
+- PyMySQL
+- bcrypt
+- HTML/CSS/JavaScript
 - MySQL / Aiven MySQL
-- HTML
-- CSS
-- JavaScript
 - Docker
 - GitHub Actions
 - Render
@@ -37,13 +40,23 @@ Please note: To ensure consistent scheduling across different server deployments
 ## Project Structure
 
 ```
-World Cup 2026 Prediction App/
-├── Dockerfile
-├── README.md
-├── main.py
-├── requirements.txt
-├── render.yaml
+wm-prediction-app/
+├── .dockerignore
 ├── .env
+├── .gitignore
+├── .github/
+│   └── workflows/ci.yml
+├── add_admin.py
+├── add_indexes.py
+├── ca.pem
+├── Dockerfile
+├── init_db.py
+├── LICENSE
+├── main.py
+├── README.md
+├── render.yaml
+├── requirements.txt
+├── seed_matches.py
 ├── static/
 │   ├── css/
 │   │   ├── base.css
@@ -55,6 +68,7 @@ World Cup 2026 Prediction App/
 │       ├── leaderboard.js
 │       └── matches.js
 ├── templates/
+│   ├── admin.html
 │   ├── index.html
 │   ├── leaderboard.html
 │   └── matches.html
@@ -70,7 +84,7 @@ git clone https://github.com/USERNAME/REPO_NAME.git
 cd REPO_NAME
 ```
 
-2. Create a virtual environment
+2. Create and activate a virtual environment
 
 ```bash
 python -m venv venv
@@ -83,9 +97,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Configure environment variables
-
-Create a `.env` file in the project root and add the required variables (see below).
+4. Create a `.env` file in the project root
 
 5. Start the application
 
@@ -99,20 +111,26 @@ python main.py
 
 ## Environment Variables
 
-Create or update the `.env` file with the following entries:
+Create or update the `.env` file with the following variables:
 
 ```env
 FLASK_APP=main.py
 FLASK_ENV=development
 SECRET_KEY=your_secret_key
-MYSQL_HOST=your_database_host
-MYSQL_PORT=3306
-MYSQL_USER=your_database_user
-MYSQL_PASSWORD=your_database_password
-MYSQL_DATABASE=your_database_name
+DB_HOST=your_database_host
+DB_PORT=3306
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
 ```
 
-> Note: For deployment on Render, Aiven MySQL is typically used. Make sure the Render environment variables match your Aiven MySQL credentials.
+## API Rate Limits
+
+The application protects API endpoints with IP-based rate limiting:
+
+- `/api/login` → 10 requests per minute
+- `/api/register` → 5 requests per minute
+- Other `/api/*` routes → 60 requests per minute
 
 ## Deployment
 
@@ -121,26 +139,34 @@ MYSQL_DATABASE=your_database_name
 1. Build the Docker image
 
 ```bash
-docker build -t world-cup-2026-prediction-app .
+docker build -t wm-prediction-app .
 ```
 
 2. Run the container
 
 ```bash
-docker run -d -p 5000:5000 --env-file .env world-cup-2026-prediction-app
+docker run -d -p 5000:5000 --env-file .env wm-prediction-app
 ```
 
 ### Render
 
-- Use `render.yaml` to configure deployment.
-- Set up Aiven MySQL as the managed database.
-- Configure Render environment variables for `SECRET_KEY`, `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE`.
-- Render will automatically deploy from the GitHub repository.
+The project includes `render.yaml` for deployment configuration.
 
-### GitHub Actions
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn main:app --bind 0.0.0.0:8000`
+- Configure Render env vars: `SECRET_KEY`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
 
-- The repository should include a workflow file that runs tests and deploys the application on updates to the `main` branch.
-- Check the GitHub Actions configuration in `.github/workflows/`.
+## Continuous Integration
+
+The repository includes a GitHub Actions workflow at `.github/workflows/ci.yml`.
+
+It runs on pushes and pull requests to `main`, using Python 3.13 and executing:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pytest test_main.py
+```
 
 ## License
 
