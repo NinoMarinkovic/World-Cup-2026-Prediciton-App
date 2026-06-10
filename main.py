@@ -279,6 +279,31 @@ def api_get_matches():
     return jsonify(matches=matches), 200
 
 
+@app.route('/api/matches', methods=['POST'])
+@admin_required
+def api_add_match():
+    data         = request.json
+    home_team    = (data.get('home_team') or '').strip()
+    away_team    = (data.get('away_team') or '').strip()
+    kickoff_time = (data.get('kickoff_time') or '').strip()
+
+    if not home_team or not away_team or not kickoff_time:
+        return jsonify(error='home_team, away_team und kickoff_time sind erforderlich.'), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO matches (home_team, away_team, kickoff_time)
+                VALUES (%s, %s, %s)
+            """, (home_team, away_team, kickoff_time))
+        conn.commit()
+    finally:
+        conn.close()
+
+    return jsonify(message='Match added successfully.'), 201
+
+
 @app.route('/api/leaderboard', methods=['GET'])
 def api_leaderboard():
     conn = get_db()
@@ -354,4 +379,4 @@ def api_submit_results():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true')
