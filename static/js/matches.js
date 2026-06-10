@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   MATCHES.JS — Spiele & Tipps
+   MATCHES.JS — Matches & Predictions
    ══════════════════════════════════════════ */
 
 const flagMap = {
@@ -56,7 +56,6 @@ const flagMap = {
   'Jordan': 'jo'   // Added for Group J
 };
 
-
 function getFlag(team) {
   const code = flagMap[team];
   if (!code) return '<span>🏳️</span>';
@@ -103,13 +102,19 @@ filterBtns.forEach(btn => {
   });
 });
 
+// ── Helper function to safely parse UTC from DB ──
+function parseUtcDate(dateString) {
+  // Appends 'Z' to force JavaScript to interpret the database string as strict UTC
+  return new Date(dateString.replace(" ", "T") + "Z");
+}
+
 // ── Render ────────────────────────────────
 function renderMatches(filter) {
   const now = new Date();
   let list = allMatches;
 
-  if (filter === 'open')     list = allMatches.filter(m => !m.finished && new Date(m.kickoff_time) > now);
-  if (filter === 'live')     list = allMatches.filter(m => !m.finished && new Date(m.kickoff_time) <= now);
+  if (filter === 'open')     list = allMatches.filter(m => !m.finished && parseUtcDate(m.kickoff_time) > now);
+  if (filter === 'live')     list = allMatches.filter(m => !m.finished && parseUtcDate(m.kickoff_time) <= now);
   if (filter === 'finished') list = allMatches.filter(m => m.finished);
 
   if (list.length === 0) {
@@ -126,10 +131,11 @@ function renderMatches(filter) {
 
 // ── Build card HTML ───────────────────────
 function buildCard(m, now) {
-  const kickoff  = new Date(m.kickoff_time);
+  const kickoff  = parseUtcDate(m.kickoff_time);
   const locked   = kickoff <= now && !m.finished;
   const finished = m.finished;
 
+  // Automatically converts the UTC date object into the user's local timezone (de-AT formatting)
   const kickoffStr = kickoff.toLocaleString('de-AT', {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit'
@@ -138,7 +144,7 @@ function buildCard(m, now) {
   let badge = '';
   if (finished)    badge = '<span class="badge badge-finished">Completed</span>';
   else if (locked) badge = '<span class="badge badge-locked">Blocked</span>';
-  else             badge = '<span class="badge badge-open">Tipp open</span>';
+  else             badge = '<span class="badge badge-open">Tip open</span>';
 
   let centerBlock = '';
   if (finished) {
