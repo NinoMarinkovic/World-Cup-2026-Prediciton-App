@@ -350,6 +350,13 @@ def api_leaderboard():
 
     return jsonify(leaderboard=leaderboard), 200
 
+@app.route('/admin')
+@login_required
+def admin():
+    if not session.get('is_admin'):
+        return redirect('/')
+    return render_template('admin.html')
+
 
 @app.route('/api/results', methods=['POST'])
 @admin_required
