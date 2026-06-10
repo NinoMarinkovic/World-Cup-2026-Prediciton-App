@@ -7,8 +7,9 @@
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/USERNAME/REPO_NAME/main.yml?branch=main)](https://github.com/features/actions)
 
 ## About
+The World Cup 2026 Prediction App is a web application for predicting FIFA World Cup 2026 matches. Users can register, log in, and submit match predictions. The app collects results, calculates rankings, and displays a competitive leaderboard.
 
-The **World Cup 2026 Prediction App** is a web application for predicting FIFA World Cup 2026 matches. Users can register, log in, and submit match predictions. The app collects results, calculates rankings, and displays a competitive leaderboard.
+Please note: To ensure consistent scheduling across different server deployments, all match kickoff times are stored and processed strictly in UTC time. The application automatically handles the timezone conversion to deliver a seamless experience for users worldwide.
 
 ## Features
 
