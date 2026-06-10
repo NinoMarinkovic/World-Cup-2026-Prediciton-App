@@ -53,8 +53,8 @@ const flagMap = {
   'Tunisia': 'tn', // Added for Group F
   'Irak': 'iq',    // Added for Group I (Matches script naming)
   'Austria': 'at', // Added for Group J
-  'Jordan': 'jo',   // Added for Group J
-  'Sweden': 'se'    // FIXED: Correct spelling and proper ISO code for Sweden
+  'Jordan': 'jo',  // Added for Group J
+  'Sweden': 'se'   // Fixed ISO code for Sweden
 };
 
 function getFlag(team) {
@@ -106,11 +106,31 @@ filterBtns.forEach(btn => {
 // ── Helper function to safely parse UTC from DB (Cross-Browser compatible) ──
 function parseUtcDate(dateString) {
   if (!dateString) return new Date();
-  
-  // Converts "2026-06-11 19:00:00" into "2026/06/11 19:00:00 UTC"
-  // This layout is 100% compatible with Safari, Chrome, Firefox, and mobile engines
-  const normalizedString = dateString.replace(/-/g, '/').replace('T', ' ') + ' UTC';
-  return new Date(normalizedString);
+
+  // Handle standard ISO format if browser returns it ("2026-06-11T19:00:00Z")
+  if (dateString.includes('T')) {
+    return new Date(dateString);
+  }
+
+  // Safely extract parts from standard SQL format: "2026-06-11 19:00:00"
+  // This bypasses browser string parsing bugs entirely
+  try {
+    const parts = dateString.split(' ');
+    const dateParts = parts[0].split('-');
+    const timeParts = parts[1].split(':');
+
+    return new Date(Date.UTC(
+      parseInt(dateParts[0], 10),
+      parseInt(dateParts[1], 10) - 1, // JavaScript months start at 0
+      parseInt(dateParts[2], 10),
+      parseInt(timeParts[0], 10),
+      parseInt(timeParts[1], 10),
+      parseInt(timeParts[2] || 0, 10)
+    ));
+  } catch (e) {
+    // Fallback if formatting varies slightly
+    return new Date(dateString);
+  }
 }
 
 // ── Render ────────────────────────────────
@@ -140,7 +160,7 @@ function buildCard(m, now) {
   const locked   = kickoff <= now && !m.finished;
   const finished = m.finished;
 
-  // Automatically converts the UTC date object into the user's local timezone (de-AT formatting)
+  // Converts UTC object automatically into local user time (e.g. Europe/Vienna)
   const kickoffStr = kickoff.toLocaleString('de-AT', {
     day: '2-digit', month: '2-digit',
     hour: '2-digit', minute: '2-digit'
