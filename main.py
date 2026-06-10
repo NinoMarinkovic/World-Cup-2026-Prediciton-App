@@ -5,11 +5,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 import pymysql
 from flask import Flask, request, jsonify, session, render_template, redirect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
+limiter = Limiter(app, key_func=get_remote_address, default_limits=[])
 
 DB_CONFIG = {
     'host':        os.getenv('DB_HOST'),
@@ -138,6 +141,7 @@ def leaderboard():
 # ══════════════════════════════════════════
 
 @app.route('/api/me')
+@limiter.limit('60 per minute')
 def api_me():
     if 'user_id' not in session:
         return jsonify(error='Unauthorized'), 401
@@ -145,6 +149,7 @@ def api_me():
 
 
 @app.route('/api/register', methods=['POST'])
+@limiter.limit('5 per minute')
 def api_register():
     data     = request.json
     name     = (data.get('name') or '').strip()
@@ -178,6 +183,7 @@ def api_register():
 
 
 @app.route('/api/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def api_login():
     data     = request.json
     email    = (data.get('email') or '').strip().lower()
@@ -216,6 +222,7 @@ def api_login():
 
 
 @app.route('/api/logout', methods=['POST'])
+@limiter.limit('60 per minute')
 def api_logout():
     session.clear()
     return jsonify(message='Logged out.'), 200
@@ -226,6 +233,7 @@ def get_current_user_id():
 
 
 @app.route('/api/predictions', methods=['POST'])
+@limiter.limit('60 per minute')
 def api_submit_prediction():
     if 'user_id' not in session:
         return jsonify(error='Unauthorized'), 401
@@ -267,6 +275,7 @@ def api_submit_prediction():
 
 
 @app.route('/api/matches', methods=['GET'])
+@limiter.limit('60 per minute')
 def api_get_matches():
     conn = get_db()
     try:
@@ -280,6 +289,7 @@ def api_get_matches():
 
 
 @app.route('/api/matches', methods=['POST'])
+@limiter.limit('60 per minute')
 @admin_required
 def api_add_match():
     data         = request.json
@@ -305,6 +315,7 @@ def api_add_match():
 
 
 @app.route('/api/leaderboard', methods=['GET'])
+@limiter.limit('60 per minute')
 def api_leaderboard():
     conn = get_db()
     try:
@@ -324,6 +335,7 @@ def api_leaderboard():
 
 
 @app.route('/api/results', methods=['POST'])
+@limiter.limit('60 per minute')
 @admin_required
 def api_submit_results():
     data = request.json
