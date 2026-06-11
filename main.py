@@ -1,16 +1,16 @@
 import bcrypt
 import re
 import os
+import tempfile
 from datetime import datetime
 from dotenv import load_dotenv
 import pymysql
 from flask import Flask, request, jsonify, session, render_template, redirect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.exceptions import HTTPException
 
 load_dotenv()
-
-import tempfile
 
 ca_cert = os.getenv('DB_SSL_CA')
 if ca_cert and not os.path.isfile(ca_cert):
@@ -37,7 +37,7 @@ DB_CONFIG = {
     'db':          os.getenv('DB_NAME'),
     'charset':     'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor,
-    'ssl':         {'ca': os.getenv('DB_SSL_CA')}
+    'ssl':         {'ssl_disabled': False}
 }
 
 def get_db():
@@ -143,8 +143,6 @@ def not_found(e):
 @app.errorhandler(429)
 def rate_limit_exceeded(e):
     return jsonify(error='Too many requests. Please slow down.'), 429
-
-from werkzeug.exceptions import HTTPException
 
 @app.errorhandler(Exception)
 def handle_error(e):
