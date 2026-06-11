@@ -10,6 +10,15 @@ from flask_limiter.util import get_remote_address
 
 load_dotenv()
 
+import tempfile
+
+ca_cert = os.getenv('DB_SSL_CA')
+if ca_cert and not os.path.isfile(ca_cert):
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pem', mode='w')
+    tmp.write(ca_cert)
+    tmp.close()
+    os.environ['DB_SSL_CA'] = tmp.name
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
 
