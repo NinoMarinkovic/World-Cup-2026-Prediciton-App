@@ -135,8 +135,12 @@ def not_found(e):
 def rate_limit_exceeded(e):
     return jsonify(error='Too many requests. Please slow down.'), 429
 
+from werkzeug.exceptions import HTTPException
+
 @app.errorhandler(Exception)
 def handle_error(e):
+    if isinstance(e, HTTPException):
+        return jsonify(error=e.description), e.code
     return jsonify(error='Something went wrong.'), 500
 
 
