@@ -12,6 +12,13 @@ from werkzeug.exceptions import HTTPException
 
 load_dotenv()
 
+ca_cert = os.getenv('DB_SSL_CA')
+if ca_cert and not os.path.isfile(ca_cert):
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pem', mode='w')
+    tmp.write(ca_cert)
+    tmp.close()
+    os.environ['DB_SSL_CA'] = tmp.name
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'fallback_secret_key')
 
@@ -30,6 +37,7 @@ DB_CONFIG = {
     'db':          os.getenv('DB_NAME'),
     'charset':     'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor,
+    'ssl':         {'ca': os.getenv('DB_SSL_CA')}
 }
 
 def get_db():
@@ -210,43 +218,40 @@ def api_register():
 @app.route('/api/login', methods=['POST'])
 @limiter.limit("10 per minute")
 def api_login():
+    data     = request.json
+    email    = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    conn = get_db()
     try:
-        data     = request.json
-        email    = (data.get('email') or '').strip().lower()
-        password = data.get('password') or ''
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+    finally:
+        conn.close()
 
-        conn = get_db()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-                user = cur.fetchone()
-        finally:
-            conn.close()
+    if not user:
+        return jsonify(error='No account found for this email.'), 404
 
-        if not user:
-            return jsonify(error='No account found for this email.'), 404
+    attempts_key = f'attempts_{email}'
+    attempts = session.get(attempts_key, 0)
 
-        attempts_key = f'attempts_{email}'
-        attempts = session.get(attempts_key, 0)
+    if attempts >= 3:
+        return jsonify(error='Account locked. Too many failed attempts.', locked=True), 403
 
-        if attempts >= 3:
-            return jsonify(error='Account locked. Too many failed attempts.', locked=True), 403
+    if not verify_password(user['password_hash'], password):
+        session[attempts_key] = attempts + 1
+        remaining = 3 - session[attempts_key]
+        if remaining <= 0:
+            return jsonify(error='Account locked.', locked=True, remaining=0), 403
+        return jsonify(error='Incorrect password.', remaining=remaining), 401
 
-        if not verify_password(user['password_hash'], password):
-            session[attempts_key] = attempts + 1
-            remaining = 3 - session[attempts_key]
-            if remaining <= 0:
-                return jsonify(error='Account locked.', locked=True, remaining=0), 403
-            return jsonify(error='Incorrect password.', remaining=remaining), 401
+    session[attempts_key] = 0
+    session['user_id']   = user['id']
+    session['user_name'] = user['username']
+    session['is_admin']  = bool(user['is_admin'])
 
-        session[attempts_key] = 0
-        session['user_id']   = user['id']
-        session['user_name'] = user['username']
-        session['is_admin']  = bool(user['is_admin'])
-
-        return jsonify(message='Login successful.', username=user['username'])
-    except Exception as e:
-        return jsonify(error=str(e)), 500
+    return jsonify(message='Login successful.', username=user['username'])
 
 
 @app.route('/api/logout', methods=['POST'])
@@ -355,7 +360,6 @@ def api_leaderboard():
         conn.close()
 
     return jsonify(leaderboard=leaderboard), 200
-
 
 @app.route('/admin')
 @login_required
