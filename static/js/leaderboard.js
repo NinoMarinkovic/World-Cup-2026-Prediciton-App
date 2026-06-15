@@ -13,7 +13,7 @@ const currentUsername = document.body.dataset.username || '';
     const data = await res.json();
     render(data.leaderboard || []);
   } catch {
-    tableBody.innerHTML = `<tr><td colspan="3" class="lb-empty">Fehler beim Laden.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="3" class="lb-empty">Error loading.</td></tr>`;
   }
 })();
 
@@ -21,7 +21,7 @@ const currentUsername = document.body.dataset.username || '';
 function render(lb) {
   if (lb.length === 0) {
     podiumEl.innerHTML = '';
-    tableBody.innerHTML = `<tr><td colspan="3" class="lb-empty">Noch keine Punkte vergeben.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="3" class="lb-empty">No points awarded yet.</td></tr>`;
     return;
   }
 
