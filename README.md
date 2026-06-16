@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.1.3-green.svg)](https://flask.palletsprojects.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/USERNAME/REPO_NAME/ci.yml?branch=main)](https://github.com/features/actions)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/NinoMarinkovic/World-Cup-2026-Prediction-App/ci.yml?branch=main)](https://github.com/features/actions)
 
 ## About
 
