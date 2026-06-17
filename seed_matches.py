@@ -36,7 +36,7 @@ MATCHES = [
     # ── Group A ──
     ("Mexico", "South Africa", "2026-06-11 21:00:00"),
     ("South Korea", "Czechia", "2026-06-12 04:00:00"),
-    ("Mexico", "South Korea", "2026-06-17 03:00:00"),
+    ("Mexico", "South Korea", "2026-06-19 03:00:00"),
     ("Czechia", "South Africa", "2026-06-17 20:00:00"),
     ("Mexico", "Czechia", "2026-06-24 03:00:00"),
     ("South Africa", "South Korea", "2026-06-24 03:00:00"),
