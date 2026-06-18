@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — WM Predictor 2026</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="nav-logo">⚽ <span>WM</span> Predictor</div>
+  <ul class="nav-links">
+    <li><a href="/matches">Matches</a></li>
+    <li><a href="/leaderboard">Leaderboard</a></li>
+    <li><a href="/profile" class="active">Profile</a></li>
+  </ul>
+  <div class="nav-user">
+    <span>Logged in as <strong>{{ username }}</strong></span>
+    <button class="btn btn-ghost" id="logout-btn">Log out</button>
+  </div>
+</nav>
+
+<!-- ── Page ── -->
+<main class="page">
+
+  <div class="section-label">Your stats</div>
+  <h1 class="section-title" style="margin-bottom: 2rem;">Profile</h1>
+
+  <!-- Loading -->
+  <div id="profile-loading" class="profile-loading">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Content -->
+  <div id="profile-content" style="display:none;">
+
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-initials">—</div>
+      <div class="profile-info">
+        <div class="profile-label">Player</div>
+        <div class="profile-name" id="profile-name">—</div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="stats-grid">
+      <div class="stat-card highlight">
+        <div class="stat-label">Total points</div>
+        <div class="stat-value" id="stat-points">—<small> pts</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Predictions</div>
+        <div class="stat-value" id="stat-predictions">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Exact scores</div>
+        <div class="stat-value" id="stat-exact">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Accuracy</div>
+        <div class="stat-value" id="stat-accuracy">—<small> %</small></div>
+      </div>
+    </div>
+
+    <!-- Breakdown -->
+    <div id="breakdown-section">
+      <div class="breakdown-title">Prediction breakdown</div>
+      <div class="breakdown-bars">
+        <div class="breakdown-row">
+          <div class="breakdown-icon">🎯</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">Exact score <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">+3 pts</span></div>
+            <div class="breakdown-bar-wrap">
+              <div class="breakdown-bar exact" id="bar-exact" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="breakdown-count" id="bar-exact-count">0</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-icon">✅</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">Correct result <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">+1 pt</span></div>
+            <div class="breakdown-bar-wrap">
+              <div class="breakdown-bar tendency" id="bar-tendency" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="breakdown-count" id="bar-tendency-count">0</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-icon">❌</div>
+          <div class="breakdown-info">
+            <div class="breakdown-name">Missed <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">+0 pts</span></div>
+            <div class="breakdown-bar-wrap">
+              <div class="breakdown-bar miss" id="bar-miss" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="breakdown-count" id="bar-miss-count">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="profile-empty" class="profile-empty" style="display:none;">
+      <div class="empty-icon">⚽</div>
+      <p>No predictions yet — head to <a href="/matches">Matches</a> and place your first tip.</p>
+    </div>
+
+  </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>
