@@ -52,7 +52,7 @@
         <button class="auth-tab" data-target="register-form">Register</button>
       </div>
 
-      <div id="auth-alert" class="alert alert-error" style="display:none; margin-bottom: 1rem;"></div>
+      <!-- alert removed to match design (no visible error box) -->
 
       <!-- Login -->
       <form class="auth-form" id="login-form">
@@ -68,7 +68,7 @@
       </form>
 
       <!-- Register -->
-      <form class="auth-form hidden" id="register-form">
+      <form class="auth-form hidden" id="register-form" style="display:none;">
         <div class="input-group">
           <label for="reg-name">Username</label>
           <input type="text" id="reg-name" placeholder="your Name" minlength="3" maxlength="30" required>
