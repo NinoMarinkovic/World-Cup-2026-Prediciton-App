@@ -170,20 +170,28 @@ The application automatically creates tables for:
 - `POST /api/register` - Create account
 - `POST /api/login` - Login user
 - `POST /api/logout` - Logout user
+- `GET /api/me` - Get current authenticated user
 
 ### Matches
 - `GET /api/matches` - Fetch all matches
-- `GET /api/matches/<id>` - Get match details
-- `POST /api/predict` - Submit prediction
+- `POST /api/matches` - Create a new match (admin only)
+- `POST /api/predictions` - Submit a prediction
+
+### Profile & Stats
+- `GET /api/leaderboard` - Fetch leaderboard rankings
+- `GET /api/profile/` - Fetch logged-in user stats
+- `GET /api/stats` - Fetch additional user statistics
+- `GET /api/pointshistory` - Fetch historical prediction points
 
 ### Knockout
 - `GET /api/knockout/matches` - Get K.O. fixtures
-- `POST /api/knockout/predictions` - Submit K.O. prediction
+- `POST /api/knockout/matches` - Create/update K.O. fixture (admin only)
+- `POST /api/knockout/predictions` - Submit or update K.O. prediction
+- `GET /api/knockout/predictions` - Fetch current user's K.O. predictions
+- `POST /api/knockout/results` - Submit K.O. result and update points (admin only)
 
 ### Admin
-- `POST /api/matches` - Create/update match
-- `POST /api/results` - Submit final scores
-- `GET /admin/users` - Manage users
+- `POST /api/results` - Submit final match scores and update points
 
 ## Testing
 
