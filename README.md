@@ -53,6 +53,11 @@ Here are some insights into the app's user interface:
 ![Stats](static/images/screenshots/stats.png)
 *Personal statistics and prediction history*
 
+
+### Matches
+![Matches](static/images/screenshots/matches.png)
+*Match predictions for group stage*
+
 ## Project Structure
 
 ```
