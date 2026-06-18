@@ -1,3 +1,4 @@
+
 # World Cup 2026 Prediction App
 
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
@@ -32,41 +33,64 @@
 | **Deployment** | Docker, Render, GitHub Actions |
 | **Tools** | PyMySQL, Flask-Limiter |
 
+## Screenshots
+
+Here are some insights into the app's user interface:
+
+### Login Page
+![Login Page](static/images/screenshots/login.png)
+*Secure registration and authentication with bcrypt password hashing*
+
+### Admin Panel
+![Admin Panel](static/images/screenshots/admin.png)
+*Complete tournament management: matches, results, and user administration*
+
+### Leaderboard
+![Leaderboard](static/images/screenshots/leaderboard.png)
+*Live rankings with real-time point calculations*
+
+### Stats / User Profile
+![Stats](static/images/screenshots/stats.png)
+*Personal statistics and prediction history*
+
 ## Project Structure
 
 ```
 wm-prediction-app/
-├── main.py                  # Flask application & routes
-├── init_db.py              # Database initialization
-├── add_admin.py            # Admin user creation
-├── add_indexes.py          # Database index optimization
-├── knockout_patch.py       # K.O. tournament setup
-├── test_main.py            # Test suite
-├── Dockerfile              # Container configuration
-├── render.yaml             # Render deployment config
-├── requirements.txt        # Python dependencies
+├── main.py # Flask application & routes
+├── init_db.py # Database initialization
+├── add_admin.py # Admin user creation
+├── add_indexes.py # Database index optimization
+├── knockout_patch.py # K.O. tournament setup
+├── test_main.py # Test suite
+├── Dockerfile # Container configuration
+├── render.yaml # Render deployment config
+├── requirements.txt # Python dependencies
 ├── static/
-│   ├── css/               # Stylesheets
-│   │   ├── base.css
-│   │   ├── index.css
-│   │   ├── matches.css
-│   │   ├── leaderboard.css
-│   │   ├── profile.css
-│   │   └── bracket.css
-│   └── js/                # JavaScript modules
-│       ├── index.js
-│       ├── matches.js
-│       ├── leaderboard.js
-│       ├── profile.js
-│       └── bracket.js
+│ ├── css/ # Stylesheets
+│ │ ├── base.css
+│ │ ├── index.css
+│ │ ├── matches.css
+│ │ ├── leaderboard.css
+│ │ ├── profile.css
+│ │ └── bracket.css
+│ └── js/ # JavaScript modules
+│ ├── index.js
+│ ├── matches.js
+│ ├── leaderboard.js
+│ ├── profile.js
+│ └── bracket.js
 └── templates/
-    ├── index.html         # Login/Register
-    ├── matches.html       # Match predictions
-    ├── leaderboard.html   # Standings
-    ├── profile.html       # User profile
-    ├── admin.html         # Admin panel
-    └── bracket.html       # K.O. bracket
+├── index.html # Login/Register
+├── matches.html # Match predictions
+├── leaderboard.html # Standings
+├── profile.html # User profile
+├── admin.html # Admin panel
+└── bracket.html # K.O. bracket
 ```
+
+
+
 
 ## Installation
 
@@ -88,7 +112,7 @@ wm-prediction-app/
 2. **Create virtual environment**
    ```bash
    python -m venv .venv
-   source .venv/bin/activate    # On Windows: .venv\Scripts\Activate
+   source .venv/bin/activate    # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**
@@ -118,44 +142,33 @@ wm-prediction-app/
    python main.py
    ```
 
-   Access at `http://localhost:5000`
+   Access at `http://127.0.0.1:5000`
 
-## Docker Deployment
+## Environment Variables
 
-### Build & Run Locally
-
-```bash
-docker build -t wm-predictor:latest .
-docker run -p 5000:5000 --env-file .env wm-predictor:latest
-```
-
-### Deploy to Render
-
-1. Push to GitHub
-2. Connect repository to Render
-3. Use `render.yaml` configuration
-4. Set environment variables in Render dashboard
-5. Deploy
-
-## Configuration
-
-### Environment Variables
+Create a `.env` file in the project root:
 
 ```env
-# Database
-DB_HOST=your-db-host
+FLASK_APP=main.py
+FLASK_ENV=development
+SECRET_KEY=your_secret_key
+DB_HOST=your_database_host
 DB_PORT=3306
-DB_USER=your-username
-DB_PASSWORD=your-password
-DB_NAME=wm_prediction
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
 DB_SSL_CA=/path/to/ca.pem
-
-# Flask
-SECRET_KEY=your-secret-key
-FLASK_ENV=production
 ```
 
-### Database Schema
+## API Rate Limits
+
+The application protects API endpoints with IP-based rate limiting:
+
+- `/api/login` → 10 requests per minute
+- `/api/register` → 5 requests per minute
+- Other `/api/*` routes → 60 requests per minute
+
+## Database Schema
 
 The application automatically creates tables for:
 - `users` - User accounts & authentication
@@ -216,6 +229,55 @@ git push origin feature/description
 # Create Pull Request
 ```
 
+## Deployment
+
+### Docker
+
+1. **Build Docker image**
+   ```bash
+   docker build -t wm-prediction-app .
+   ```
+
+2. **Run container**
+   ```bash
+   docker run -d -p 5000:5000 --env-file .env wm-prediction-app
+   ```
+
+### Render
+
+The project includes `render.yaml` for deployment configuration:
+
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn main:app --bind 0.0.0.0:8000`
+- Configure Render env vars: `SECRET_KEY`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+
+### Build & Run Locally
+
+```bash
+docker build -t wm-predictor:latest .
+docker run -p 5000:5000 --env-file .env wm-predictor:latest
+```
+
+### Deploy to Render
+
+1. Push to GitHub
+2. Connect repository to Render
+3. Use `render.yaml` configuration
+4. Set environment variables in Render dashboard
+5. Deploy
+
+## Continuous Integration
+
+The repository includes a GitHub Actions workflow at `.github/workflows/ci.yml`.
+
+It runs on pushes and pull requests to `main`, using Python 3.13 and executing:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pytest test_main.py
+```
+
 ## Deployment Checklist
 
 - [ ] Database configured & migrations applied
@@ -226,6 +288,7 @@ git push origin feature/description
 - [ ] Backup strategy in place
 - [ ] Monitoring/logging configured
 - [ ] Tests passing (18/18)
+- [ ] Screenshots in `static/images/screenshots/` saved and included in README
 
 ## Performance Considerations
 
@@ -255,126 +318,5 @@ For issues, questions, or contributions, please visit the [GitHub Repository](ht
 ---
 
 **Last Updated**: June 2026 | **Status**: Production Ready ✅
-├── ca.pem
-├── Dockerfile
-├── init_db.py
-├── LICENSE
-├── main.py
-├── README.md
-├── render.yaml
-├── requirements.txt
-├── seed_matches.py
-├── static/
-│   ├── css/
-│   │   ├── base.css
-│   │   ├── index.css
-│   │   ├── leaderboard.css
-│   │   └── matches.css
-│   └── js/
-│       ├── index.js
-│       ├── leaderboard.js
-│       └── matches.js
-├── templates/
-│   ├── admin.html
-│   ├── index.html
-│   ├── leaderboard.html
-│   └── matches.html
-└── test_main.py
-```
 
-## Getting Started
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/USERNAME/REPO_NAME.git
-cd REPO_NAME
-```
-
-2. Create and activate a virtual environment
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-4. Create a `.env` file in the project root
-
-5. Start the application
-
-```bash
-python main.py
-```
-
-6. Open the app in your browser
-
-`http://127.0.0.1:5000`
-
-## Environment Variables
-
-Create or update the `.env` file with the following variables:
-
-```env
-FLASK_APP=main.py
-FLASK_ENV=development
-SECRET_KEY=your_secret_key
-DB_HOST=your_database_host
-DB_PORT=3306
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_NAME=your_database_name
-```
-
-## API Rate Limits
-
-The application protects API endpoints with IP-based rate limiting:
-
-- `/api/login` → 10 requests per minute
-- `/api/register` → 5 requests per minute
-- Other `/api/*` routes → 60 requests per minute
-
-## Deployment
-
-### Docker
-
-1. Build the Docker image
-
-```bash
-docker build -t wm-prediction-app .
-```
-
-2. Run the container
-
-```bash
-docker run -d -p 5000:5000 --env-file .env wm-prediction-app
-```
-
-### Render
-
-The project includes `render.yaml` for deployment configuration.
-
-- Build command: `pip install -r requirements.txt`
-- Start command: `gunicorn main:app --bind 0.0.0.0:8000`
-- Configure Render env vars: `SECRET_KEY`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-
-## Continuous Integration
-
-The repository includes a GitHub Actions workflow at `.github/workflows/ci.yml`.
-
-It runs on pushes and pull requests to `main`, using Python 3.13 and executing:
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python -m pytest test_main.py
-```
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
+## Project Structure
