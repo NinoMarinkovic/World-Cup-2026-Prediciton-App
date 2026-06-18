@@ -485,7 +485,7 @@ def api_pointshistory():
         cumulative += pred['points']
         pred['cumulative_points'] = cumulative
 
-    return jsonify(predictions=predictions), 200
+    return jsonify(history=predictions), 200
 
 @app.route('/admin')
 @login_required
