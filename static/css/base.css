@@ -241,6 +241,9 @@ input:focus {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Utilities ── */
+.hidden { display: none !important; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .nav { padding: 0 1rem; }
