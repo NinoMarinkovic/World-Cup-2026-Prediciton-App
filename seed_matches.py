@@ -37,30 +37,30 @@ MATCHES = [
     ("Mexico", "South Africa", "2026-06-11 21:00:00"),
     ("South Korea", "Czechia", "2026-06-12 04:00:00"),
     ("Mexico", "South Korea", "2026-06-19 03:00:00"),
-    ("Czechia", "South Africa", "2026-06-17 20:00:00"),
-    ("Mexico", "Czechia", "2026-06-24 03:00:00"),
-    ("South Africa", "South Korea", "2026-06-24 03:00:00"),
+    ("Czechia", "South Africa", "2026-06-18 18:00:00"),      # FIX: 20:00 → 18:00
+    ("Mexico", "Czechia", "2026-06-25 03:00:00"),             # FIX: 24.6 → 25.6
+    ("South Africa", "South Korea", "2026-06-25 03:00:00"),   # FIX: 24.6 → 25.6
 
     # ── Group B ──
     ("Canada", "Bosnia & Herz.", "2026-06-12 21:00:00"),
     ("Qatar", "Switzerland", "2026-06-13 21:00:00"),
-    ("Canada", "Qatar", "2026-06-17 23:00:00"),
-    ("Switzerland", "Bosnia & Herz.", "2026-06-18 02:00:00"),
+    ("Canada", "Qatar", "2026-06-19 00:00:00"),
+    ("Switzerland", "Bosnia & Herz.", "2026-06-18 21:00:00"),
     ("Switzerland", "Canada", "2026-06-24 21:00:00"),
     ("Bosnia & Herz.", "Qatar", "2026-06-24 21:00:00"),
 
     # ── Group C ──
     ("Brazil", "Morocco", "2026-06-14 00:00:00"),
     ("Haiti", "Scotland", "2026-06-14 03:00:00"),
-    ("Brazil", "Haiti", "2026-06-18 20:30:00"),
-    ("Scotland", "Morocco", "2026-06-19 00:00:00"),
+    ("Brazil", "Haiti", "2026-06-20 02:30:00"),               # FIX: 20:30 → 02:30
+    ("Scotland", "Morocco", "2026-06-20 00:00:00"),
     ("Scotland", "Brazil", "2026-06-25 00:00:00"),
     ("Morocco", "Haiti", "2026-06-25 00:00:00"),
 
     # ── Group D ──
     ("USA", "Paraguay", "2026-06-13 03:00:00"),
     ("Australia", "Turkey", "2026-06-14 06:00:00"),
-    ("USA", "Australia", "2026-06-18 21:00:00"),
+    ("USA", "Australia", "2026-06-19 21:00:00"),              # FIX: 18.6 → 19.6
     ("Turkey", "Paraguay", "2026-06-20 05:00:00"),
     ("Turkey", "USA", "2026-06-26 04:00:00"),
     ("Paraguay", "Australia", "2026-06-26 04:00:00"),
@@ -71,7 +71,7 @@ MATCHES = [
     ("Germany", "Ivory Coast", "2026-06-20 22:00:00"),
     ("Ecuador", "Curacao", "2026-06-21 02:00:00"),
     ("Curacao", "Ivory Coast", "2026-06-25 22:00:00"),
-    ("Ecuador", "Germany", "2026-06-25 22:00:00"),
+    ("Ecuador", "Germany", "2026-06-25 22:00:00"),            # FIX: 20.6 → 25.6
 
     # ── Group F ──
     ("Netherlands", "Japan", "2026-06-14 22:00:00"),
