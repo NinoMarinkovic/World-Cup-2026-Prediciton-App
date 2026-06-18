@@ -5,7 +5,7 @@
 .auth-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
 }
 
 /* ── Left — Hero panel ── */
@@ -27,7 +27,7 @@
       rgba(255,255,255,0.025) 39px,
       rgba(255,255,255,0.025) 40px
     );
-  display: flex;
+  display: none;
   flex-direction: column;
   justify-content: center;
   padding: 4rem;
@@ -104,6 +104,7 @@
   align-items: center;
   justify-content: center;
   padding: 3rem 2.5rem;
+  min-height: 100vh;
 }
 
 .auth-box {
@@ -159,6 +160,5 @@
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .auth-page { grid-template-columns: 1fr; }
   .auth-hero { display: none; }
 }
