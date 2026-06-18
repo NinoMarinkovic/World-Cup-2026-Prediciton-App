@@ -45,8 +45,10 @@ function render(d, s, h) {
   setBar('bar-miss',     missCount,                total, 'bar-miss-count');
 
   // Points history chart
-  if (h && h.history && h.history.length > 1) {
-    renderChart(h.history);
+  // Points history chart — accept different API shapes (history or predictions)
+  const histArray = h && (h.history || h.predictions || h) ? (h.history || h.predictions || h) : null;
+  if (histArray && Array.isArray(histArray) && histArray.length > 1) {
+    renderChart(histArray);
   }
 
   // Extra stats
