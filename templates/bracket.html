@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turnierbaum</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bracket.css') }}" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-logo">⚽ TippApp</div>
+    <div class="nav-links">
+      <a href="/matches">Spiele</a>
+      <a href="/bracket" class="active">K.O.-Runde</a>
+      <a href="/leaderboard">Rangliste</a>
+      <a href="/profile">Profil</a>
+    </div>
+    <button class="nav-logout" onclick="logout()">Abmelden</button>
+  </nav>
+
+  <main class="bracket-page">
+    <h1 class="bracket-title">K.O.-Runde</h1>
+    <p class="bracket-subtitle">Tippe auf die K.O.-Spiele — Tore vorhersagen und Sieger wählen.</p>
+
+    <div id="bracket-loading" class="bracket-loading">
+      <div class="spinner"></div>
+      <span>Lade Turnierbaum…</span>
+    </div>
+
+    <div id="bracket-empty" class="bracket-empty hidden">
+      <div class="empty-icon">🏆</div>
+      <p>Die K.O.-Phase wurde noch nicht gestartet.<br>Schau später wieder vorbei!</p>
+    </div>
+
+    <div id="bracket-wrap" class="bracket-wrap hidden">
+      <div class="bracket-scroll">
+        <div class="bracket">
+          <div class="bracket-round" id="round-R16">
+            <div class="round-label">Achtelfinale</div>
+            <div class="round-matches" id="matches-R16"></div>
+          </div>
+          <div class="bracket-round" id="round-QF">
+            <div class="round-label">Viertelfinale</div>
+            <div class="round-matches" id="matches-QF"></div>
+          </div>
+          <div class="bracket-round" id="round-SF">
+            <div class="round-label">Halbfinale</div>
+            <div class="round-matches" id="matches-SF"></div>
+          </div>
+          <div class="bracket-round" id="round-F">
+            <div class="round-label">Finale</div>
+            <div class="round-matches" id="matches-F"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Tipp-Modal -->
+  <div id="tip-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2 class="modal-title" id="modal-title">Tipp abgeben</h2>
+      <div class="modal-teams" id="modal-teams"></div>
+      <div class="modal-inputs">
+        <div class="score-input-group">
+          <span class="score-team" id="score-home-label"></span>
+          <input type="number" id="score-home" min="0" max="20" placeholder="0" />
+          <span class="score-sep">:</span>
+          <input type="number" id="score-away" min="0" max="20" placeholder="0" />
+          <span class="score-team" id="score-away-label"></span>
+        </div>
+        <div class="winner-select-wrap" id="winner-wrap">
+          <label class="winner-label">Sieger (bei Gleichstand nach 90 Min.):</label>
+          <div class="winner-buttons" id="winner-buttons"></div>
+        </div>
+      </div>
+      <div id="modal-error" class="modal-error hidden"></div>
+      <button class="btn-primary modal-submit" id="modal-submit" onclick="submitTip()">Tipp speichern</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/bracket.js') }}"></script>
+</body>
+</html>

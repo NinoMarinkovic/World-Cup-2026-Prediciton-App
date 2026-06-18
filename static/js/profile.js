@@ -47,8 +47,8 @@ function render(d, s, h) {
   // Points history chart
   // Points history chart — accept different API shapes (history or predictions)
   const histArray = h && (h.history || h.predictions || h) ? (h.history || h.predictions || h) : null;
-  if (histArray && Array.isArray(histArray) && histArray.length > 1) {
-    renderChart(histArray);
+  if (histArray && Array.isArray(histArray) && histArray.length > 0) {
+    renderChart(histArray).catch(err => { console.error('Chart render failed:', err); });
   }
 
   // Extra stats
@@ -73,9 +73,25 @@ function render(d, s, h) {
   }
 }
 
-function renderChart(history) {
+async function renderChart(history) {
   const section = document.getElementById('chart-section');
   section.style.display = 'block';
+
+  // Ensure Chart.js is available (some environments may block CDN). Load dynamically if missing.
+  if (typeof Chart === 'undefined') {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load Chart.js'));
+      document.head.appendChild(s);
+    }).catch(err => {
+      console.error(err);
+      // Show a user-friendly message in the chart area
+      section.innerHTML = '<div style="padding:1rem;color:var(--text-muted);">Chart failed to load.</div>';
+      return;
+    });
+  }
 
   const labels = history.map((_, i) => {
     const h = history[i];
@@ -84,9 +100,12 @@ function renderChart(history) {
 
   const data = history.map(h => h.cumulative_points);
 
-  const ctx = document.getElementById('points-chart').getContext('2d');
+  const canvas = document.getElementById('points-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
 
-  new Chart(ctx, {
+  try {
+    new Chart(ctx, {
     type: 'line',
     data: {
       labels,
@@ -136,7 +155,11 @@ function renderChart(history) {
         }
       }
     }
-  });
+    });
+  } catch (e) {
+    console.error('Error creating chart:', e);
+    section.innerHTML = '<div style="padding:1rem;color:var(--text-muted);">Could not render chart.</div>';
+  }
 }
 
 function setBar(barId, count, total, countId) {
