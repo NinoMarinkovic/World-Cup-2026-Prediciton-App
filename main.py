@@ -169,6 +169,11 @@ def matches():
 def leaderboard():
     return render_template('leaderboard.html', username=session['user_name'])
 
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', username=session['user_name'])
+
 
 # ══════════════════════════════════════════
 # Flask Routes – API
@@ -361,6 +366,43 @@ def api_leaderboard():
 
     return jsonify(leaderboard=leaderboard), 200
 
+@app.route('/api/profile/', methods=['GET'])
+@login_required
+def api_profile():
+    user_id = get_current_user_id()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    COALESCE(SUM(points), 0) AS total_points,
+                    COUNT(*) AS total_predictions,
+                    SUM(points = 3) AS exact_score_count,
+                    SUM(points = 1) AS correct_tendency_count
+                FROM predictions
+                WHERE user_id = %s
+            """, (user_id,))
+            profile_stats = cur.fetchone()
+    finally:
+        conn.close()
+
+    total_points = int(profile_stats['total_points'] or 0)
+    total_predictions = int(profile_stats['total_predictions'] or 0)
+    exact_score_count = int(profile_stats['exact_score_count'] or 0)
+    correct_tendency_count = int(profile_stats['correct_tendency_count'] or 0)
+    accuracy = 0.0
+    if total_predictions > 0:
+        accuracy = round((exact_score_count / total_predictions) * 100, 2)
+
+    return jsonify(
+        username=session['user_name'],
+        total_points=total_points,
+        total_predictions=total_predictions,
+        exact_score_count=exact_score_count,
+        correct_tendency_count=correct_tendency_count,
+        accuracy=accuracy
+    ), 200
+
 @app.route('/admin')
 @login_required
 def admin():
@@ -379,6 +421,8 @@ def api_submit_results():
 
     if not all(isinstance(x, int) for x in [match_id, home_score, away_score]):
         return jsonify(error='Invalid input. Match ID and scores must be integers.'), 400
+    
+
 
     conn = get_db()
     try:
