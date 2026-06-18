@@ -6,6 +6,17 @@ const tabs    = document.querySelectorAll('.auth-tab');
 const forms   = document.querySelectorAll('.auth-form');
 const alertEl = document.getElementById('auth-alert');
 
+function initializeAuthTabState() {
+  forms.forEach(f => f.classList.add('hidden'));
+  const activeTab = document.querySelector('.auth-tab.active');
+  if (activeTab) {
+    const target = document.getElementById(activeTab.dataset.target);
+    target?.classList.remove('hidden');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', initializeAuthTabState);
+
 // ── Tab switching ──────────────────────────
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
