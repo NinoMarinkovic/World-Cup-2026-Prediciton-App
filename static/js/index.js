@@ -30,11 +30,13 @@ tabs.forEach(tab => {
 
 // ── Alert helpers ──────────────────────────
 function showAlert(msg, type = 'error') {
+  if (!alertEl) return;
   alertEl.textContent = msg;
   alertEl.className = `alert alert-${type}`;
   alertEl.style.display = 'flex';
 }
 function clearAlert() {
+  if (!alertEl) return;
   alertEl.style.display = 'none';
   alertEl.textContent = '';
 }
