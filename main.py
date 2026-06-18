@@ -188,7 +188,13 @@ def handle_error(e):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # add a cache-busting version based on the CSS file mtime
+    try:
+        static_css_path = os.path.join(app.root_path, 'static', 'css', 'index.css')
+        static_version = int(os.path.getmtime(static_css_path)) if os.path.exists(static_css_path) else int(datetime.utcnow().timestamp())
+    except Exception:
+        static_version = int(datetime.utcnow().timestamp())
+    return render_template('index.html', static_version=static_version)
 
 @app.route('/matches')
 @login_required
