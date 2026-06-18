@@ -6,6 +6,7 @@
   <title>Profile — WM Predictor 2026</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -100,6 +101,14 @@
           </div>
           <div class="breakdown-count" id="bar-miss-count">0</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Points history chart -->
+    <div id="chart-section" style="display:none; margin-top: 2rem;">
+      <div class="breakdown-title" style="margin-bottom: 1rem;">Points over time</div>
+      <div class="chart-wrap">
+        <canvas id="points-chart"></canvas>
       </div>
     </div>
 

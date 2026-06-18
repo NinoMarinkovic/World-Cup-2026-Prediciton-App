@@ -456,6 +456,37 @@ def api_stats():
         total_correct_tendency=total_correct_tendency
     ), 200
 
+@app.route('/api/pointshistory', methods=['GET'])
+@login_required
+def api_pointshistory():
+    user_id = get_current_user_id()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    p.match_id,
+                    p.points,
+                    p.created_at,
+                    m.home_team,
+                    m.away_team
+                FROM predictions p
+                JOIN matches m ON p.match_id = m.id
+                WHERE p.user_id = %s AND m.finished = TRUE
+                ORDER BY p.created_at ASC
+            """, (user_id,))
+            predictions = cur.fetchall()
+    finally:
+        conn.close()
+
+    # Calculate cumulative points
+    cumulative = 0
+    for pred in predictions:
+        cumulative += pred['points']
+        pred['cumulative_points'] = cumulative
+
+    return jsonify(predictions=predictions), 200
+
 @app.route('/admin')
 @login_required
 def admin():
