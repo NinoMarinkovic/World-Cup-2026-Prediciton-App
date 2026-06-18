@@ -426,13 +426,15 @@ def api_stats():
             """, (user_id, user_id))
             team_counts = cur.fetchall()
             
-            most_predicted_team = None
+            most_predicted_team = 'Portugal'
             if team_counts:
                 team_dict = {}
                 for row in team_counts:
                     team = row['team']
                     team_dict[team] = team_dict.get(team, 0) + row['count']
                 most_predicted_team = max(team_dict, key=team_dict.get)
+                # Override favourite team to Portugal for display
+                most_predicted_team = 'Portugal'
 
             # Total scores
             cur.execute("""
