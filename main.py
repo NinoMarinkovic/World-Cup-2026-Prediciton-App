@@ -403,6 +403,59 @@ def api_profile():
         accuracy=accuracy
     ), 200
 
+@app.route('/api/stats', methods=['GET'])
+@login_required
+def api_stats():
+    user_id = get_current_user_id()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            # Most predicted team
+            cur.execute("""
+                SELECT home_team AS team, COUNT(*) AS count
+                FROM predictions p
+                JOIN matches m ON p.match_id = m.id
+                WHERE p.user_id = %s
+                GROUP BY home_team
+                UNION ALL
+                SELECT away_team AS team, COUNT(*) AS count
+                FROM predictions p
+                JOIN matches m ON p.match_id = m.id
+                WHERE p.user_id = %s
+                GROUP BY away_team
+            """, (user_id, user_id))
+            team_counts = cur.fetchall()
+            
+            most_predicted_team = None
+            if team_counts:
+                team_dict = {}
+                for row in team_counts:
+                    team = row['team']
+                    team_dict[team] = team_dict.get(team, 0) + row['count']
+                most_predicted_team = max(team_dict, key=team_dict.get)
+
+            # Total scores
+            cur.execute("""
+                SELECT
+                    SUM(points = 3) AS total_exact_scores,
+                    SUM(points = 1) AS total_correct_tendency
+                FROM predictions
+                WHERE user_id = %s
+            """, (user_id,))
+            scores = cur.fetchone()
+    finally:
+        conn.close()
+
+    total_exact_scores = int(scores['total_exact_scores'] or 0)
+    total_correct_tendency = int(scores['total_correct_tendency'] or 0)
+
+    return jsonify(
+        most_predicted_team=most_predicted_team,
+        best_round='Group Stage',
+        total_exact_scores=total_exact_scores,
+        total_correct_tendency=total_correct_tendency
+    ), 200
+
 @app.route('/admin')
 @login_required
 def admin():
@@ -421,6 +474,8 @@ def api_submit_results():
 
     if not all(isinstance(x, int) for x in [match_id, home_score, away_score]):
         return jsonify(error='Invalid input. Match ID and scores must be integers.'), 400
+
+
     
 
 

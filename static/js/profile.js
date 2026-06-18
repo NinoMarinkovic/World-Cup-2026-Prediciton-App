@@ -4,21 +4,26 @@
 
 (async function init() {
   try {
-    const res  = await fetch('/api/profile/');
-    const data = await res.json();
+    const [profileRes, statsRes] = await Promise.all([
+      fetch('/api/profile/'),
+      fetch('/api/stats')
+    ]);
 
-    if (!res.ok) {
+    if (!profileRes.ok) {
       showError();
       return;
     }
 
-    render(data);
+    const profile = await profileRes.json();
+    const stats   = statsRes.ok ? await statsRes.json() : null;
+
+    render(profile, stats);
   } catch {
     showError();
   }
 })();
 
-function render(d) {
+function render(d, s) {
   // Header
   document.getElementById('profile-initials').textContent = d.username.slice(0, 2).toUpperCase();
   document.getElementById('profile-name').textContent = d.username;
@@ -37,6 +42,14 @@ function render(d) {
   setBar('bar-tendency', d.correct_tendency_count,   total, 'bar-tendency-count');
   setBar('bar-miss',     missCount,                  total, 'bar-miss-count');
 
+  // Extra stats
+  if (s) {
+    const favTeamEl = document.getElementById('stat-fav-team');
+    const bestRoundEl = document.getElementById('stat-best-round');
+    if (favTeamEl) favTeamEl.textContent = s.most_predicted_team || '—';
+    if (bestRoundEl) bestRoundEl.textContent = s.best_round || '—';
+  }
+
   // Hide loader
   document.getElementById('profile-loading').style.display = 'none';
   document.getElementById('profile-content').style.display = 'block';
@@ -44,6 +57,8 @@ function render(d) {
   // No predictions yet
   if (d.total_predictions === 0) {
     document.getElementById('breakdown-section').style.display = 'none';
+    document.getElementById('extra-stats-section').style.display = 'none';
+    document.getElementById('extra-stats-section-content').style.display = 'none';
     document.getElementById('profile-empty').style.display = 'block';
   }
 }
