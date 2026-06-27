@@ -1,249 +1,248 @@
-'use strict';
+/* ══════════════════════════════════════════
+   BRACKET.JS — Knockout Tournament Tree
+   ══════════════════════════════════════════ */
 
-// ── State ──────────────────────────────────────────────────────────────────
+const ROUNDS = [
+  { key: 'R32', label: 'Round of 32' },
+  { key: 'R16', label: 'Round of 16' },
+  { key: 'QF',  label: 'Quarter-finals' },
+  { key: 'SF',  label: 'Semi-finals' },
+  { key: 'F',   label: 'Final' },
+];
+
+const flagMap = {
+  'Mexico': 'mx', 'South Africa': 'za', 'South Korea': 'kr', 'Czechia': 'cz',
+  'Canada': 'ca', 'Bosnia & Herz.': 'ba', 'Qatar': 'qa', 'Switzerland': 'ch',
+  'Brazil': 'br', 'Morocco': 'ma', 'Haiti': 'ht', 'Scotland': 'gb-sct',
+  'USA': 'us', 'Paraguay': 'py', 'Australia': 'au', 'Turkey': 'tr',
+  'Germany': 'de', 'Curacao': 'cw', 'Ivory Coast': 'ci', 'Ecuador': 'ec',
+  'Netherlands': 'nl', 'Japan': 'jp', 'Peru': 'pe', 'Senegal': 'sn',
+  'Belgium': 'be', 'Egypt': 'eg', 'Iran': 'ir', 'New Zealand': 'nz',
+  'Spain': 'es', 'Cabo Verde': 'cv', 'Saudi Arabia': 'sa', 'Uruguay': 'uy',
+  'Argentina': 'ar', 'Algeria': 'dz', 'Nigeria': 'ng', 'Honduras': 'hn',
+  'France': 'fr', 'Norway': 'no', 'Congo DR': 'cd', 'Portugal': 'pt',
+  'Venezuela': 've', 'Uzbekistan': 'uz', 'Colombia': 'co', 'England': 'gb-eng',
+  'Croatia': 'hr', 'Ghana': 'gh', 'Panama': 'pa', 'Tunisia': 'tn',
+  'Irak': 'iq', 'Austria': 'at', 'Jordan': 'jo', 'Sweden': 'se'
+};
+
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function flagImg(team) {
+  const code = flagMap[team];
+  if (!code) return '';
+  return `<img class="ko-team-flag" src="https://flagcdn.com/24x18/${code}.png" alt="">`;
+}
+
 let allMatches = [];
 let myPredictions = {};
-let activeMatchId = null;
-let selectedWinner = null;
+let currentRound = 'R32';
 
-const ROUND_ORDER = ['R16', 'QF', 'SF', 'F'];
+const roundSelect = document.getElementById('round-select');
+const bracketTree = document.getElementById('bracket-tree');
 
-// ── Init ───────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadBracket();
-});
+(async function init() {
+  await Promise.all([fetchMatches(), fetchMyPredictions()]);
+  renderRound(currentRound);
+})();
 
-async function loadBracket() {
+async function fetchMatches() {
   try {
-    const [matchRes, predRes] = await Promise.all([
-      fetch('/api/knockout/matches'),
-      fetch('/api/knockout/predictions'),
-    ]);
+    const res  = await fetch('/api/knockout/matches');
+    const data = await res.json();
+    allMatches = data.matches || [];
+  } catch {
+    allMatches = [];
+  }
+}
 
-    if (!matchRes.ok) throw new Error('Nicht autorisiert');
-
-    const matchData = await matchRes.json();
-    const predData  = predRes.ok ? await predRes.json() : { predictions: [] };
-
-    allMatches = matchData.matches || [];
-    myPredictions = {};
-    (predData.predictions || []).forEach(p => {
+async function fetchMyPredictions() {
+  try {
+    const res  = await fetch('/api/knockout/predictions');
+    const data = await res.json();
+    (data.predictions || []).forEach(p => {
       myPredictions[p.knockout_match_id] = p;
     });
-
-    render();
-  } catch (err) {
-    console.error(err);
-    showEmpty();
-  }
+  } catch { /* not logged in or none yet */ }
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────
-function render() {
-  hide('bracket-loading');
+roundSelect.addEventListener('change', () => {
+  currentRound = roundSelect.value;
+  renderRound(currentRound);
+});
 
-  if (!allMatches.length) { showEmpty(); return; }
+function renderRound(roundKey) {
+  const matches = allMatches.filter(m => m.round === roundKey);
 
-  show('bracket-wrap');
+  if (matches.length === 0) {
+    bracketTree.innerHTML = `
+      <div class="bracket-empty">
+        <div class="empty-icon">🏆</div>
+        <p>This round hasn't been set yet.</p>
+        <p>Check back once the previous round finishes.</p>
+      </div>`;
+    return;
+  }
 
-  ROUND_ORDER.forEach(round => {
-    const roundEl   = document.getElementById(`round-${round}`);
-    const matchesEl = document.getElementById(`matches-${round}`);
-    if (!matchesEl) return;
+  matches.sort((a, b) => a.slot - b.slot);
 
-    const roundMatches = allMatches
-      .filter(m => m.round === round)
-      .sort((a, b) => a.slot - b.slot);
+  const cardsHtml = matches.map(m => buildKoCard(m)).join('');
 
-    if (!roundMatches.length) {
-      roundEl.style.display = 'none';
-      return;
-    }
-    roundEl.style.display = '';
-    matchesEl.innerHTML = '';
-    roundMatches.forEach(m => matchesEl.appendChild(buildMatchCard(m)));
+  bracketTree.innerHTML = `
+    <div class="bracket-column">
+      ${cardsHtml}
+    </div>`;
+
+  bracketTree.querySelectorAll('.ko-card.is-predictable').forEach(card => {
+    card.querySelector('.ko-submit-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      submitKoPrediction(card);
+    });
   });
-}
 
-function buildMatchCard(match) {
-  const pred   = myPredictions[match.id];
-  const isPast = match.kickoff_time && new Date() >= new Date(match.kickoff_time);
-  const isFinished = match.finished;
-  const canTip = match.home_team && match.away_team && !isFinished && !isPast;
-
-  const card = document.createElement('div');
-  card.className = `match-card${isFinished ? ' finished' : ''}${pred ? ' has-tip' : ''}`;
-
-  const homeName = match.home_team || '?';
-  const awayName = match.away_team || '?';
-
-  let scoreBlock = '';
-  if (isFinished) {
-    const hs = match.home_score ?? '-';
-    const as = match.away_score ?? '-';
-    const pen = (match.home_penalties != null)
-      ? `<span class="penalties">(${match.home_penalties} : ${match.away_penalties} i.E.)</span>`
-      : '';
-    scoreBlock = `<div class="match-result">${hs} : ${as}${pen}</div>`;
-  }
-
-  let tipBlock = '';
-  if (pred) {
-    const pts = isFinished ? `<span class="tip-pts">${pred.points} Pkt.</span>` : '';
-    const winner = pred.pred_winner ? ` · Sieger: <b>${pred.pred_winner}</b>` : '';
-    tipBlock = `<div class="tip-badge">Tipp: ${pred.pred_home} : ${pred.pred_away}${winner}${pts}</div>`;
-  }
-
-  let timeBlock = '';
-  if (match.kickoff_time && !isFinished) {
-    const d = new Date(match.kickoff_time);
-    timeBlock = `<div class="match-time">${d.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit' })} · ${d.toLocaleTimeString('de-AT', { hour:'2-digit', minute:'2-digit' })} Uhr</div>`;
-  }
-
-  card.innerHTML = `
-    <div class="match-teams">
-      <span class="team home">${homeName}</span>
-      <span class="vs">vs</span>
-      <span class="team away">${awayName}</span>
-    </div>
-    ${timeBlock}
-    ${scoreBlock}
-    ${tipBlock}
-    ${canTip ? `<button class="btn-tip" onclick="openModal(${match.id})">${pred ? 'Tipp ändern' : 'Tippen'}</button>` : ''}
-    ${isPast && !isFinished ? '<div class="closed-badge">Tipp geschlossen</div>' : ''}
-  `;
-  return card;
-}
-
-// ── Modal ──────────────────────────────────────────────────────────────────
-function openModal(matchId) {
-  const match = allMatches.find(m => m.id === matchId);
-  if (!match) return;
-
-  activeMatchId  = matchId;
-  selectedWinner = null;
-
-  const pred = myPredictions[matchId];
-
-  document.getElementById('modal-title').textContent =
-    `${match.home_team} vs ${match.away_team}`;
-  document.getElementById('modal-teams').textContent = roundLabel(match.round);
-  document.getElementById('score-home-label').textContent = match.home_team;
-  document.getElementById('score-away-label').textContent = match.away_team;
-  document.getElementById('score-home').value = pred ? pred.pred_home : '';
-  document.getElementById('score-away').value = pred ? pred.pred_away : '';
-
-  // Winner buttons
-  const wb = document.getElementById('winner-buttons');
-  wb.innerHTML = '';
-  [match.home_team, match.away_team].forEach(team => {
-    const btn = document.createElement('button');
-    btn.className = 'winner-btn';
-    btn.textContent = team;
-    if (pred && pred.pred_winner === team) {
+  bracketTree.querySelectorAll('.ko-pen-select button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.closest('.ko-pen-select');
+      group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      selectedWinner = team;
-    }
-    btn.onclick = () => selectWinner(team, wb);
-    wb.appendChild(btn);
-  });
-
-  // Score change: auto-show/hide winner select
-  const homeInput = document.getElementById('score-home');
-  const awayInput = document.getElementById('score-away');
-  const updateWinner = () => {
-    const h = parseInt(homeInput.value);
-    const a = parseInt(awayInput.value);
-    const wrap = document.getElementById('winner-wrap');
-    if (!isNaN(h) && !isNaN(a) && h === a) {
-      wrap.classList.remove('hidden');
-    } else {
-      wrap.classList.add('hidden');
-      selectedWinner = null;
-      wb.querySelectorAll('.winner-btn').forEach(b => b.classList.remove('selected'));
-    }
-  };
-  homeInput.oninput = updateWinner;
-  awayInput.oninput = updateWinner;
-  updateWinner();
-
-  clearError();
-  show('tip-modal');
-}
-
-function selectWinner(team, container) {
-  selectedWinner = team;
-  container.querySelectorAll('.winner-btn').forEach(b => {
-    b.classList.toggle('selected', b.textContent === team);
+    });
   });
 }
 
-function closeModal() {
-  hide('tip-modal');
-  activeMatchId = null;
+function buildKoCard(m) {
+  const hasTeams  = m.home_team && m.away_team;
+  const finished  = m.finished;
+  const kickoff   = m.kickoff_time ? new Date(m.kickoff_time) : null;
+  const now       = new Date();
+  const locked    = kickoff && kickoff <= now && !finished;
+  const predictable = hasTeams && !finished && !locked;
+
+  const homeName = m.home_team || 'TBD';
+  const awayName = m.away_team || 'TBD';
+
+  let homeWinnerClass = '';
+  let awayWinnerClass = '';
+  if (finished) {
+    const homeWon = (m.home_score > m.away_score) ||
+                     (m.home_score === m.away_score && m.home_penalties > m.away_penalties);
+    homeWinnerClass = homeWon ? 'is-winner' : '';
+    awayWinnerClass = !homeWon ? 'is-winner' : '';
+  }
+
+  const homeScoreDisplay = finished ? m.home_score : '';
+  const awayScoreDisplay = finished ? m.away_score : '';
+
+  let meta = '';
+  if (finished) {
+    if (m.home_penalties !== null && m.home_penalties !== undefined) {
+      meta = `<div class="ko-card-meta">Penalties: ${m.home_penalties}–${m.away_penalties}</div>`;
+    }
+  } else if (kickoff) {
+    meta = `<div class="ko-card-meta">⏱ ${kickoff.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>`;
+  }
+
+  const existing = myPredictions[m.id];
+  let predictForm = '';
+  if (predictable) {
+    const prefHome = existing ? existing.pred_home : '';
+    const prefAway = existing ? existing.pred_away : '';
+    predictForm = `
+      <div class="ko-predict-row">
+        <div class="ko-predict-inputs">
+          <input type="number" class="ko-pred-home" min="0" max="99" placeholder="0" value="${prefHome}">
+          <span class="pred-separator">:</span>
+          <input type="number" class="ko-pred-away" min="0" max="99" placeholder="0" value="${prefAway}">
+        </div>
+        <div class="ko-pen-note">If level after 90 min, who wins on penalties?</div>
+        <div class="ko-pen-select">
+          <button type="button" class="${existing && existing.pred_winner === m.home_team ? 'selected' : ''}" data-team="${esc(homeName)}">${esc(homeName)}</button>
+          <button type="button" class="${existing && existing.pred_winner === m.away_team ? 'selected' : ''}" data-team="${esc(awayName)}">${esc(awayName)}</button>
+        </div>
+        <button class="btn btn-primary ko-submit-btn" data-match-id="${m.id}">
+          ${existing ? '✓ Update tip' : 'Submit tip'}
+        </button>
+      </div>`;
+  }
+
+  return `
+    <div class="ko-card ${!hasTeams ? 'is-empty' : ''} ${finished ? 'is-finished' : ''} ${predictable ? 'is-predictable' : ''}" data-id="${m.id}">
+      <div class="ko-team-row ${homeWinnerClass}">
+        <div class="ko-team-name ${!m.home_team ? 'tbd' : ''}">${flagImg(homeName)} ${esc(homeName)}</div>
+        <div class="ko-team-score">${homeScoreDisplay}</div>
+      </div>
+      <div class="ko-team-row ${awayWinnerClass}">
+        <div class="ko-team-name ${!m.away_team ? 'tbd' : ''}">${flagImg(awayName)} ${esc(awayName)}</div>
+        <div class="ko-team-score">${awayScoreDisplay}</div>
+      </div>
+      ${meta}
+      ${predictForm}
+    </div>`;
 }
 
-async function submitTip() {
-  const homeVal = parseInt(document.getElementById('score-home').value);
-  const awayVal = parseInt(document.getElementById('score-away').value);
+async function submitKoPrediction(card) {
+  const matchId   = parseInt(card.dataset.id);
+  const predHome  = parseInt(card.querySelector('.ko-pred-home').value);
+  const predAway  = parseInt(card.querySelector('.ko-pred-away').value);
+  const selectedBtn = card.querySelector('.ko-pen-select button.selected');
+  const predWinner  = selectedBtn ? selectedBtn.dataset.team : null;
 
-  if (isNaN(homeVal) || isNaN(awayVal) || homeVal < 0 || awayVal < 0) {
-    showError('Bitte gültige Tore eingeben.');
+  if (isNaN(predHome) || isNaN(predAway)) {
+    showToast('Please fill in both score fields.', 'error');
     return;
   }
-  if (homeVal === awayVal && !selectedWinner) {
-    showError('Bei Gleichstand bitte einen Sieger wählen.');
+  if (predHome === predAway && !predWinner) {
+    showToast('Score is level — pick a penalty winner.', 'error');
     return;
   }
 
-  const btn = document.getElementById('modal-submit');
+  const btn = card.querySelector('.ko-submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Speichern…';
-  clearError();
+  btn.innerHTML = '<span class="loader"></span>';
 
   try {
     const res = await fetch('/api/knockout/predictions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        knockout_match_id: activeMatchId,
-        pred_home: homeVal,
-        pred_away: awayVal,
-        pred_winner: selectedWinner,
-      }),
+        knockout_match_id: matchId,
+        pred_home: predHome,
+        pred_away: predAway,
+        pred_winner: predHome === predAway ? predWinner : null
+      })
     });
     const data = await res.json();
-    if (!res.ok) { showError(data.error || 'Fehler beim Speichern.'); return; }
 
-    closeModal();
-    await loadBracket();
+    if (!res.ok) {
+      showToast(data.error || 'Could not save tip.', 'error');
+    } else {
+      showToast('Tip saved!', 'success');
+      btn.textContent = '✓ Update tip';
+    }
   } catch {
-    showError('Netzwerkfehler. Bitte erneut versuchen.');
+    showToast('Network error. Please try again.', 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Tipp speichern';
+    if (btn.innerHTML.includes('loader')) btn.textContent = 'Submit tip';
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function roundLabel(r) {
-  return { R16: 'Achtelfinale', QF: 'Viertelfinale', SF: 'Halbfinale', F: 'Finale' }[r] || r;
-}
-function show(id)   { document.getElementById(id)?.classList.remove('hidden'); }
-function hide(id)   { document.getElementById(id)?.classList.add('hidden'); }
-function showEmpty(){ hide('bracket-loading'); show('bracket-empty'); }
-function showError(msg) {
-  const el = document.getElementById('modal-error');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-}
-function clearError() {
-  const el = document.getElementById('modal-error');
-  el.textContent = '';
-  el.classList.add('hidden');
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
 }
 
-async function logout() {
-  await fetch('/api/logout', { method: 'POST' });
-  window.location.href = '/';
+// Logout
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/';
+  });
 }
