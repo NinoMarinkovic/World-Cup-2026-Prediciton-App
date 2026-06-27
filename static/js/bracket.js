@@ -7,6 +7,7 @@ const ROUNDS = [
   { key: 'R16', label: 'Round of 16' },
   { key: 'QF',  label: 'Quarter-finals' },
   { key: 'SF',  label: 'Semi-finals' },
+  { key: 'TP',  label: '3rd Place' },
   { key: 'F',   label: 'Final' },
 ];
 

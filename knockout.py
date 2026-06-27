@@ -12,6 +12,9 @@ from main import (
 
 knockout_bp = Blueprint('knockout', __name__)
 
+VALID_ROUNDS = ('R32', 'R16', 'QF', 'SF', 'TP', 'F')
+ROUND_ORDER = "'R32','R16','QF','SF','TP','F'"
+
 
 @knockout_bp.route('/bracket')
 @login_required
@@ -26,7 +29,7 @@ def api_get_knockout_matches():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT * FROM knockout_matches ORDER BY FIELD(round,'R16','R32','QF','SF','F'), slot ASC"
+                f"SELECT * FROM knockout_matches ORDER BY FIELD(round,{ROUND_ORDER}), slot ASC"
             )
             matches = cur.fetchall()
     finally:
@@ -44,8 +47,8 @@ def api_add_knockout_match():
     away_team = (data.get('away_team') or '').strip()
     kickoff = (data.get('kickoff_time') or '').strip()
 
-    if round_ not in ('R16', 'R32', 'QF', 'SF', 'F'):
-        return jsonify(error='round must be R16, R32, QF, SF or F.'), 400
+    if round_ not in VALID_ROUNDS:
+        return jsonify(error=f"round must be one of {', '.join(VALID_ROUNDS)}."), 400
     if not isinstance(slot, int):
         return jsonify(error='slot must be an integer.'), 400
 
