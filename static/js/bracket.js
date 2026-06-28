@@ -1,15 +1,6 @@
 /* ══════════════════════════════════════════
-   BRACKET.JS — Knockout Tournament Tree
+   BRACKET.JS — Full Tournament Tree (mirrored)
    ══════════════════════════════════════════ */
-
-const ROUNDS = [
-  { key: 'R32', label: 'Round of 32' },
-  { key: 'R16', label: 'Round of 16' },
-  { key: 'QF',  label: 'Quarter-finals' },
-  { key: 'SF',  label: 'Semi-finals' },
-  { key: 'TP',  label: '3rd Place' },
-  { key: 'F',   label: 'Final' },
-];
 
 const flagMap = {
   'Mexico': 'mx', 'South Africa': 'za', 'South Korea': 'kr', 'Czechia': 'cz',
@@ -41,14 +32,12 @@ function flagImg(team) {
 
 let allMatches = [];
 let myPredictions = {};
-let currentRound = 'R32';
 
-const roundSelect = document.getElementById('round-select');
-const bracketTree = document.getElementById('bracket-tree');
+const bracketRoot = document.getElementById('bracket-tree');
 
 (async function init() {
   await Promise.all([fetchMatches(), fetchMyPredictions()]);
-  renderRound(currentRound);
+  render();
 })();
 
 async function fetchMatches() {
@@ -71,50 +60,102 @@ async function fetchMyPredictions() {
   } catch { /* not logged in or none yet */ }
 }
 
-roundSelect.addEventListener('change', () => {
-  currentRound = roundSelect.value;
-  renderRound(currentRound);
-});
+function byRound(roundKey) {
+  return allMatches.filter(m => m.round === roundKey).sort((a, b) => a.slot - b.slot);
+}
 
-function renderRound(roundKey) {
-  const matches = allMatches.filter(m => m.round === roundKey);
+function render() {
+  const r32 = byRound('R32');
 
-  if (matches.length === 0) {
-    bracketTree.innerHTML = `
+  if (r32.length === 0) {
+    bracketRoot.innerHTML = `
       <div class="bracket-empty">
         <div class="empty-icon">🏆</div>
-        <p>This round hasn't been set yet.</p>
-        <p>Check back once the previous round finishes.</p>
+        <p>The knockout stage hasn't been set yet.</p>
+        <p>Check back once the group stage finishes.</p>
       </div>`;
     return;
   }
 
-  matches.sort((a, b) => a.slot - b.slot);
+  const r16 = byRound('R16');
+  const qf  = byRound('QF');
+  const sf  = byRound('SF');
+  const f   = byRound('F');
+  const tp  = byRound('TP');
 
-  const cardsHtml = matches.map(m => buildKoCard(m)).join('');
+  // Split R32, R16, QF, SF into left/right halves
+  const leftR32  = r32.slice(0, 8),  rightR32 = r32.slice(8, 16);
+  const leftR16  = r16.slice(0, 4),  rightR16 = r16.slice(4, 8);
+  const leftQF   = qf.slice(0, 2),   rightQF  = qf.slice(2, 4);
+  const leftSF   = sf.slice(0, 1),   rightSF  = sf.slice(1, 2);
 
-  bracketTree.innerHTML = `
-    <div class="bracket-column">
-      ${cardsHtml}
+  const html = `
+    <div class="full-bracket">
+
+      <div class="bracket-side side-left">
+        ${buildColumn('Round of 32', leftR32)}
+        ${buildColumn('Round of 16', padTo(leftR16, 4))}
+        ${buildColumn('Quarter-finals', padTo(leftQF, 2))}
+        ${buildColumn('Semi-final', padTo(leftSF, 1))}
+      </div>
+
+      <div class="bracket-center">
+        <div class="final-block">
+          <div class="bracket-col-label">Final</div>
+          ${f.length ? buildCard(f[0], true) : buildEmptyCard()}
+          ${buildChampionBox(f[0])}
+        </div>
+        <div class="center-connector"></div>
+        <div class="third-place-block">
+          <div class="bracket-col-label">3rd Place</div>
+          ${tp.length ? buildCard(tp[0]) : buildEmptyCard()}
+        </div>
+      </div>
+
+      <div class="bracket-side side-right">
+        ${buildColumn('Round of 32', rightR32)}
+        ${buildColumn('Round of 16', padTo(rightR16, 4))}
+        ${buildColumn('Quarter-finals', padTo(rightQF, 2))}
+        ${buildColumn('Semi-final', padTo(rightSF, 1))}
+      </div>
+
     </div>`;
 
-  bracketTree.querySelectorAll('.ko-card.is-predictable').forEach(card => {
-    card.querySelector('.ko-submit-btn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      submitKoPrediction(card);
-    });
-  });
-
-  bracketTree.querySelectorAll('.ko-pen-select button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const group = btn.closest('.ko-pen-select');
-      group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-    });
-  });
+  bracketRoot.innerHTML = html;
+  bindEvents();
 }
 
-function buildKoCard(m) {
+function padTo(arr, n) {
+  const out = arr.slice();
+  while (out.length < n) out.push(null);
+  return out;
+}
+
+function buildColumn(label, matches) {
+  const pairs = [];
+  for (let i = 0; i < matches.length; i += 2) {
+    const pairItems = matches.slice(i, i + 2);
+    pairs.push(`
+      <div class="bracket-pair">
+        ${pairItems.map(m => m ? buildCard(m) : buildEmptyCard()).join('')}
+      </div>`);
+  }
+  return `
+    <div class="bracket-col">
+      <div class="bracket-col-label">${label}</div>
+      ${pairs.join('')}
+    </div>`;
+}
+
+function buildEmptyCard() {
+  return `
+    <div class="ko-card is-empty">
+      <div class="ko-team-row"><div class="ko-team-name tbd">TBD</div><div class="ko-team-score"></div></div>
+      <div class="ko-team-row"><div class="ko-team-name tbd">TBD</div><div class="ko-team-score"></div></div>
+    </div>`;
+}
+
+function buildCard(m, isFinal = false) {
   const hasTeams  = m.home_team && m.away_team;
   const finished  = m.finished;
   const kickoff   = m.kickoff_time ? new Date(m.kickoff_time) : null;
@@ -140,7 +181,7 @@ function buildKoCard(m) {
   let meta = '';
   if (finished) {
     if (m.home_penalties !== null && m.home_penalties !== undefined) {
-      meta = `<div class="ko-card-meta">Penalties: ${m.home_penalties}–${m.away_penalties}</div>`;
+      meta = `<div class="ko-card-meta">Pens: ${m.home_penalties}–${m.away_penalties}</div>`;
     }
   } else if (kickoff) {
     meta = `<div class="ko-card-meta">⏱ ${kickoff.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>`;
@@ -158,7 +199,7 @@ function buildKoCard(m) {
           <span class="pred-separator">:</span>
           <input type="number" class="ko-pred-away" min="0" max="99" placeholder="0" value="${prefAway}">
         </div>
-        <div class="ko-pen-note">If level after 90 min, who wins on penalties?</div>
+        <div class="ko-pen-note">If level, who wins on penalties?</div>
         <div class="ko-pen-select">
           <button type="button" class="${existing && existing.pred_winner === m.home_team ? 'selected' : ''}" data-team="${esc(homeName)}">${esc(homeName)}</button>
           <button type="button" class="${existing && existing.pred_winner === m.away_team ? 'selected' : ''}" data-team="${esc(awayName)}">${esc(awayName)}</button>
@@ -170,7 +211,7 @@ function buildKoCard(m) {
   }
 
   return `
-    <div class="ko-card ${!hasTeams ? 'is-empty' : ''} ${finished ? 'is-finished' : ''} ${predictable ? 'is-predictable' : ''}" data-id="${m.id}">
+    <div class="ko-card ${!hasTeams ? 'is-empty' : ''} ${finished ? 'is-finished' : ''} ${predictable ? 'is-predictable' : ''} ${isFinal ? 'final-card' : ''}" data-id="${m.id}">
       <div class="ko-team-row ${homeWinnerClass}">
         <div class="ko-team-name ${!m.home_team ? 'tbd' : ''}">${flagImg(homeName)} ${esc(homeName)}</div>
         <div class="ko-team-score">${homeScoreDisplay}</div>
@@ -182,6 +223,35 @@ function buildKoCard(m) {
       ${meta}
       ${predictForm}
     </div>`;
+}
+
+function buildChampionBox(finalMatch) {
+  if (!finalMatch || !finalMatch.finished) return '';
+  const homeWon = (finalMatch.home_score > finalMatch.away_score) ||
+                   (finalMatch.home_score === finalMatch.away_score && finalMatch.home_penalties > finalMatch.away_penalties);
+  const champion = homeWon ? finalMatch.home_team : finalMatch.away_team;
+  return `
+    <div class="champion-box">
+      <div class="champion-trophy">🏆</div>
+      <div class="champion-name">${esc(champion)}</div>
+    </div>`;
+}
+
+function bindEvents() {
+  bracketRoot.querySelectorAll('.ko-submit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      submitKoPrediction(btn.closest('.ko-card'));
+    });
+  });
+
+  bracketRoot.querySelectorAll('.ko-pen-select button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.closest('.ko-pen-select');
+      group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
 }
 
 async function submitKoPrediction(card) {
