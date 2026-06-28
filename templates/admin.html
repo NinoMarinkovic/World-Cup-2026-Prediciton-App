@@ -37,7 +37,6 @@
     cursor: pointer;
     transition: all 0.2s;
   }
-
   .btn-logout:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
 
   .main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
@@ -60,6 +59,40 @@
     margin-left: 0.5rem;
   }
 
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 2rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 0.35rem;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 0.55rem 1rem;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: rgba(212,175,55,0.15);
+    color: #D4AF37;
+    border: 1px solid rgba(212,175,55,0.25);
+  }
+  .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.7); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Shared section styles ── */
   .section { margin-bottom: 2rem; }
 
   .section-title {
@@ -80,10 +113,7 @@
     margin-bottom: 1rem;
   }
 
-  .form-row .form-inputs {
-    display: grid;
-    gap: 0.8rem;
-  }
+  .form-inputs { display: grid; gap: 0.8rem; }
 
   .form-input {
     width: 100%;
@@ -96,9 +126,9 @@
     outline: none;
     transition: border-color 0.2s;
   }
-
   .form-input:focus { border-color: #D4AF37; }
 
+  /* ── Match rows (group stage) ── */
   .match-row {
     display: flex;
     align-items: center;
@@ -110,23 +140,11 @@
     padding: 0.9rem 1.25rem;
     margin-bottom: 0.5rem;
   }
-
-  .match-row.is-finished {
-    opacity: 0.5;
-  }
+  .match-row.is-finished { opacity: 0.5; }
 
   .match-info { flex: 1; }
-
-  .match-teams {
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .match-time {
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.35);
-    margin-top: 0.2rem;
-  }
+  .match-teams { font-size: 0.9rem; font-weight: 600; }
+  .match-time { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 0.2rem; }
 
   .score-display {
     font-size: 0.85rem;
@@ -136,11 +154,7 @@
     text-align: center;
   }
 
-  .score-inputs {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
+  .score-inputs { display: flex; align-items: center; gap: 0.4rem; }
 
   .score-input {
     width: 44px;
@@ -155,7 +169,6 @@
     outline: none;
     transition: border-color 0.2s;
   }
-
   .score-input:focus { border-color: #D4AF37; }
 
   .sep { color: rgba(255,255,255,0.3); font-weight: 700; }
@@ -172,10 +185,80 @@
     transition: background 0.2s;
     white-space: nowrap;
   }
-
   .btn-submit:hover { background: #1f8038; }
   .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* ── Knockout match rows ── */
+  .ko-match-row {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 0.9rem 1.25rem;
+    margin-bottom: 0.6rem;
+  }
+  .ko-match-row.is-finished { opacity: 0.5; }
+
+  .ko-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+  }
+
+  .ko-teams { font-size: 0.9rem; font-weight: 600; }
+  .ko-meta {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 0.15rem;
+  }
+
+  .ko-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .ko-score-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .ko-winner-select {
+    padding: 0.38rem 0.6rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .ko-winner-select:focus { border-color: #D4AF37; }
+  .ko-winner-select option { background: #0a1f0e; }
+
+  .ko-round-header {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(212,175,55,0.6);
+    margin: 1.2rem 0 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(212,175,55,0.12);
+  }
+
+  .ko-finished-badge {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    font-weight: 500;
+  }
+
+  /* ── Toast ── */
   .toast {
     position: fixed;
     bottom: 1.5rem;
@@ -187,14 +270,16 @@
     z-index: 999;
     animation: fadeIn 0.2s ease;
   }
-
   .toast-success { background: #1a6b2e; color: #fff; }
-  .toast-error { background: #c0392b; color: #fff; }
+  .toast-error   { background: #c0392b; color: #fff; }
 
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
   .loading { text-align: center; padding: 3rem; color: rgba(255,255,255,0.3); }
-  .empty { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 0.85rem; }
+  .empty   { text-align: center; padding: 2rem; color: rgba(255,255,255,0.3); font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -213,35 +298,72 @@
     <p>Submit match results and update scores.</p>
   </div>
 
-  <div class="section">
-    <div class="section-title">Create Match</div>
-    <div class="form-row">
-      <div class="form-inputs">
-        <input id="home-team" class="form-input" type="text" placeholder="Home team" autocomplete="off">
-        <input id="away-team" class="form-input" type="text" placeholder="Away team" autocomplete="off">
-        <input id="kickoff-time" class="form-input" type="datetime-local" placeholder="Kickoff time">
+  <!-- Tab buttons -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('group')">Group Stage</button>
+    <button class="tab-btn" onclick="switchTab('knockout')">Knockout</button>
+  </div>
+
+  <!-- ══ GROUP STAGE TAB ══ -->
+  <div id="tab-group" class="tab-panel active">
+    <div class="section">
+      <div class="section-title">Create Match</div>
+      <div class="form-row">
+        <div class="form-inputs">
+          <input id="home-team" class="form-input" type="text" placeholder="Home team" autocomplete="off">
+          <input id="away-team" class="form-input" type="text" placeholder="Away team" autocomplete="off">
+          <input id="kickoff-time" class="form-input" type="datetime-local">
+        </div>
+        <button class="btn-submit" id="add-match-btn">Add match</button>
       </div>
-      <button class="btn-submit" id="add-match-btn">Add match</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Pending Results</div>
+      <div id="pending-list"><div class="loading">Loading matches...</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Finished Matches</div>
+      <div id="finished-list"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Pending Results</div>
-    <div id="pending-list"><div class="loading">Loading matches...</div></div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Finished Matches</div>
-    <div id="finished-list"><div class="loading">Loading...</div></div>
+  <!-- ══ KNOCKOUT TAB ══ -->
+  <div id="tab-knockout" class="tab-panel">
+    <div class="section">
+      <div class="section-title">Pending Knockout Results</div>
+      <div id="ko-pending-list"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Finished Knockout Matches</div>
+      <div id="ko-finished-list"><div class="loading">Loading...</div></div>
+    </div>
   </div>
 </div>
 
 <script>
+  /* ══════════════════════════════════════════
+     TAB SWITCHING
+  ══════════════════════════════════════════ */
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'group') || (i === 1 && tab === 'knockout'));
+    });
+    document.getElementById('tab-group').classList.toggle('active', tab === 'group');
+    document.getElementById('tab-knockout').classList.toggle('active', tab === 'knockout');
+
+    if (tab === 'knockout') loadKoMatches();
+  }
+
+  /* ══════════════════════════════════════════
+     GROUP STAGE
+  ══════════════════════════════════════════ */
   let allMatches = [];
 
   async function loadMatches() {
     try {
-      const res = await fetch('/api/matches');
+      const res  = await fetch('/api/matches');
       const data = await res.json();
       allMatches = data.matches || [];
       renderLists();
@@ -259,7 +381,7 @@
 
   function renderLists() {
     const pending  = allMatches.filter(m => !m.finished);
-    const finished = allMatches.filter(m => m.finished);
+    const finished = allMatches.filter(m =>  m.finished);
 
     document.getElementById('pending-list').innerHTML = pending.length
       ? pending.map(buildRow).join('')
@@ -281,47 +403,6 @@
     });
   }
 
-  async function createMatch() {
-    const homeTeam = document.getElementById('home-team').value.trim();
-    const awayTeam = document.getElementById('away-team').value.trim();
-    const kickoffTimeInput = document.getElementById('kickoff-time').value;
-
-    if (!homeTeam || !awayTeam || !kickoffTimeInput) {
-      showToast('Enter home team, away team and kickoff time.', 'error');
-      return;
-    }
-
-    const kickoffTime = kickoffTimeInput.replace('T', ' ');
-
-    const addButton = document.getElementById('add-match-btn');
-    addButton.disabled = true;
-    addButton.textContent = 'Adding...';
-
-    try {
-      const res = await fetch('/api/matches', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, kickoff_time: kickoffTime })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        showToast(data.error || 'Error creating match.', 'error');
-      } else {
-        showToast('Match created successfully.', 'success');
-        document.getElementById('home-team').value = '';
-        document.getElementById('away-team').value = '';
-        document.getElementById('kickoff-time').value = '';
-        await loadMatches();
-      }
-    } catch {
-      showToast('Network error.', 'error');
-    } finally {
-      addButton.disabled = false;
-      addButton.textContent = 'Add match';
-    }
-  }
-
   function buildRow(m) {
     return `
       <div class="match-row" data-id="${m.id}">
@@ -338,9 +419,51 @@
       </div>`;
   }
 
+  async function createMatch() {
+    const homeTeam       = document.getElementById('home-team').value.trim();
+    const awayTeam       = document.getElementById('away-team').value.trim();
+    const kickoffTimeInput = document.getElementById('kickoff-time').value;
+
+    if (!homeTeam || !awayTeam || !kickoffTimeInput) {
+      showToast('Enter home team, away team and kickoff time.', 'error');
+      return;
+    }
+
+    const addButton = document.getElementById('add-match-btn');
+    addButton.disabled = true;
+    addButton.textContent = 'Adding...';
+
+    try {
+      const res  = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          home_team:    homeTeam,
+          away_team:    awayTeam,
+          kickoff_time: kickoffTimeInput.replace('T', ' ')
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Error creating match.', 'error');
+      } else {
+        showToast('Match created.', 'success');
+        document.getElementById('home-team').value   = '';
+        document.getElementById('away-team').value   = '';
+        document.getElementById('kickoff-time').value = '';
+        await loadMatches();
+      }
+    } catch {
+      showToast('Network error.', 'error');
+    } finally {
+      addButton.disabled = false;
+      addButton.textContent = 'Add match';
+    }
+  }
+
   async function submitResult(btn) {
-    const row      = btn.closest('.match-row');
-    const matchId  = parseInt(btn.dataset.matchId);
+    const row       = btn.closest('.match-row');
+    const matchId   = parseInt(btn.dataset.matchId);
     const homeScore = parseInt(row.querySelector('.home-score').value);
     const awayScore = parseInt(row.querySelector('.away-score').value);
 
@@ -353,13 +476,12 @@
     btn.textContent = '...';
 
     try {
-      const res = await fetch('/api/results', {
+      const res  = await fetch('/api/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ match_id: matchId, home_score: homeScore, away_score: awayScore })
       });
       const data = await res.json();
-
       if (!res.ok) {
         showToast(data.error || 'Error submitting result.', 'error');
         btn.disabled = false;
@@ -375,6 +497,167 @@
     }
   }
 
+  /* ══════════════════════════════════════════
+     KNOCKOUT
+  ══════════════════════════════════════════ */
+  const ROUND_ORDER  = ['R32', 'R16', 'QF', 'SF', 'TP', 'F'];
+  const ROUND_LABELS = {
+    R32: 'Round of 32', R16: 'Round of 16',
+    QF:  'Quarter-finals', SF: 'Semi-finals',
+    TP:  '3rd Place', F: 'Final'
+  };
+
+  async function loadKoMatches() {
+    document.getElementById('ko-pending-list').innerHTML  = '<div class="loading">Loading...</div>';
+    document.getElementById('ko-finished-list').innerHTML = '<div class="loading">Loading...</div>';
+
+    try {
+      const res  = await fetch('/api/knockout/matches');
+      const data = await res.json();
+      renderKoLists(data.matches || []);
+    } catch {
+      document.getElementById('ko-pending-list').innerHTML = '<div class="empty">Failed to load.</div>';
+    }
+  }
+
+  function renderKoLists(matches) {
+    const pending  = matches.filter(m => !m.finished);
+    const finished = matches.filter(m =>  m.finished);
+
+    // ── Pending ──
+    if (!pending.length) {
+      document.getElementById('ko-pending-list').innerHTML = '<div class="empty">No pending knockout matches.</div>';
+    } else {
+      // Group by round
+      const byRound = {};
+      pending.forEach(m => { (byRound[m.round] = byRound[m.round] || []).push(m); });
+
+      let html = '';
+      ROUND_ORDER.forEach(r => {
+        if (!byRound[r]) return;
+        html += `<div class="ko-round-header">${ROUND_LABELS[r]}</div>`;
+        byRound[r].forEach(m => { html += buildKoRow(m); });
+      });
+      document.getElementById('ko-pending-list').innerHTML = html;
+    }
+
+    // ── Finished ──
+    if (!finished.length) {
+      document.getElementById('ko-finished-list').innerHTML = '<div class="empty">No finished knockout matches yet.</div>';
+    } else {
+      const byRound = {};
+      finished.forEach(m => { (byRound[m.round] = byRound[m.round] || []).push(m); });
+
+      let html = '';
+      ROUND_ORDER.forEach(r => {
+        if (!byRound[r]) return;
+        html += `<div class="ko-round-header">${ROUND_LABELS[r]}</div>`;
+        byRound[r].forEach(m => { html += buildKoFinishedRow(m); });
+      });
+      document.getElementById('ko-finished-list').innerHTML = html;
+    }
+
+    // Attach listeners
+    document.querySelectorAll('.ko-submit-btn').forEach(btn => {
+      btn.addEventListener('click', () => submitKoResult(btn));
+    });
+  }
+
+  function buildKoRow(m) {
+    const homeTeam = m.home_team || 'TBD';
+    const awayTeam = m.away_team || 'TBD';
+    const time     = m.kickoff_time ? formatDate(m.kickoff_time) : '—';
+
+    return `
+      <div class="ko-match-row" data-id="${m.id}">
+        <div class="ko-header">
+          <div class="match-info">
+            <div class="ko-teams">${homeTeam} vs ${awayTeam}</div>
+            <div class="ko-meta">Slot ${m.slot ?? '—'} &middot; ${time}</div>
+          </div>
+        </div>
+        <div class="ko-controls">
+          <div class="ko-score-group">
+            <input class="score-input ko-home-score" type="number" min="0" max="99" placeholder="0">
+            <span class="sep">:</span>
+            <input class="score-input ko-away-score" type="number" min="0" max="99" placeholder="0">
+          </div>
+          <select class="ko-winner-select ko-winner">
+            <option value="">Winner (if draw)</option>
+            <option value="${homeTeam}">${homeTeam}</option>
+            <option value="${awayTeam}">${awayTeam}</option>
+          </select>
+          <button class="btn-submit ko-submit-btn" data-match-id="${m.id}">Submit</button>
+        </div>
+      </div>`;
+  }
+
+  function buildKoFinishedRow(m) {
+    const homeTeam = m.home_team || 'TBD';
+    const awayTeam = m.away_team || 'TBD';
+    return `
+      <div class="ko-match-row is-finished">
+        <div class="ko-header">
+          <div class="match-info">
+            <div class="ko-teams">${homeTeam} vs ${awayTeam}</div>
+            <div class="ko-meta">Winner: <strong style="color:#D4AF37">${m.winner || '—'}</strong></div>
+          </div>
+          <div class="score-display">${m.home_score ?? '—'} : ${m.away_score ?? '—'}</div>
+        </div>
+      </div>`;
+  }
+
+  async function submitKoResult(btn) {
+    const row       = btn.closest('.ko-match-row');
+    const matchId   = parseInt(btn.dataset.matchId);
+    const homeScore = parseInt(row.querySelector('.ko-home-score').value);
+    const awayScore = parseInt(row.querySelector('.ko-away-score').value);
+    const winner    = row.querySelector('.ko-winner').value.trim();
+
+    if (isNaN(homeScore) || isNaN(awayScore)) {
+      showToast('Please enter both scores.', 'error');
+      return;
+    }
+
+    // If draw, winner is required
+    if (homeScore === awayScore && !winner) {
+      showToast('Scores are equal — select a winner (penalties).', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      const res  = await fetch('/api/knockout/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_id:   matchId,
+          home_score: homeScore,
+          away_score: awayScore,
+          winner:     winner || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Error submitting result.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Submit';
+      } else {
+        showToast(`Result saved: ${homeScore} : ${awayScore}`, 'success');
+        await loadKoMatches();
+      }
+    } catch {
+      showToast('Network error.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Submit';
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     SHARED
+  ══════════════════════════════════════════ */
   function showToast(msg, type = 'success') {
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
