@@ -70,6 +70,35 @@
     margin-bottom: 0.75rem;
   }
 
+  .form-row {
+    display: grid;
+    gap: 0.8rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-row .form-inputs {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus { border-color: #D4AF37; }
+
   .match-row {
     display: flex;
     align-items: center;
@@ -185,6 +214,18 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Create Match</div>
+    <div class="form-row">
+      <div class="form-inputs">
+        <input id="home-team" class="form-input" type="text" placeholder="Home team" autocomplete="off">
+        <input id="away-team" class="form-input" type="text" placeholder="Away team" autocomplete="off">
+        <input id="kickoff-time" class="form-input" type="datetime-local" placeholder="Kickoff time">
+      </div>
+      <button class="btn-submit" id="add-match-btn">Add match</button>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Pending Results</div>
     <div id="pending-list"><div class="loading">Loading matches...</div></div>
   </div>
@@ -238,6 +279,47 @@
     document.querySelectorAll('.submit-btn').forEach(btn => {
       btn.addEventListener('click', () => submitResult(btn));
     });
+  }
+
+  async function createMatch() {
+    const homeTeam = document.getElementById('home-team').value.trim();
+    const awayTeam = document.getElementById('away-team').value.trim();
+    const kickoffTimeInput = document.getElementById('kickoff-time').value;
+
+    if (!homeTeam || !awayTeam || !kickoffTimeInput) {
+      showToast('Enter home team, away team and kickoff time.', 'error');
+      return;
+    }
+
+    const kickoffTime = kickoffTimeInput.replace('T', ' ');
+
+    const addButton = document.getElementById('add-match-btn');
+    addButton.disabled = true;
+    addButton.textContent = 'Adding...';
+
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, kickoff_time: kickoffTime })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error || 'Error creating match.', 'error');
+      } else {
+        showToast('Match created successfully.', 'success');
+        document.getElementById('home-team').value = '';
+        document.getElementById('away-team').value = '';
+        document.getElementById('kickoff-time').value = '';
+        await loadMatches();
+      }
+    } catch {
+      showToast('Network error.', 'error');
+    } finally {
+      addButton.disabled = false;
+      addButton.textContent = 'Add match';
+    }
   }
 
   function buildRow(m) {
@@ -306,6 +388,7 @@
     window.location.href = '/';
   }
 
+  document.getElementById('add-match-btn').addEventListener('click', createMatch);
   loadMatches();
 </script>
 </body>
