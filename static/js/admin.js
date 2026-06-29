@@ -233,8 +233,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          match_id: matchId, home_score: homeScore,
-          away_score: awayScore, winner: winner || null
+          knockout_match_id: matchId,
+          home_score: homeScore,
+          away_score: awayScore,
+          winner: winner || null
         })
       });
       const data = await res.json();
